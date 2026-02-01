@@ -1,8 +1,11 @@
 'use server';
 
 /**
- * @fileOverview Provides personalized food recommendations based on user health conditions and food scan data.
+ * @fileOverview Provides personalized food recommendations and OCR for food labels.
  *
+ * - extractFoodInfoFromImage - Extracts structured food information from an image of a food label.
+ * - ExtractFoodInfoInput - The input type for the extractFoodInfoFromImage function.
+ * - ExtractFoodInfoOutput - The return type for the extractFoodInfoFromImage function.
  * - getPersonalizedFoodRecommendations - A function that generates personalized food recommendations with explanations.
  * - PersonalizedFoodRecommendationsInput - The input type for the getPersonalizedFoodRecommendations function.
  * - PersonalizedFoodRecommendationsOutput - The return type for the getPersonalizedFoodRecommendations function.
@@ -10,6 +13,61 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+
+const ExtractFoodInfoInputSchema = z.object({
+  imageDataUri: z
+    .string()
+    .describe(
+      "An image of a food label, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+    ),
+});
+export type ExtractFoodInfoInput = z.infer<typeof ExtractFoodInfoInputSchema>;
+
+const ExtractFoodInfoOutputSchema = z.object({
+  productName: z.string().describe('The name of the food product.'),
+  ingredients: z.string().describe('The complete list of ingredients.'),
+  calories: z.number().describe('The number of calories per serving.'),
+  fat: z.number().describe('The amount of fat in grams (g) per serving.'),
+  sugar: z.number().describe('The amount of sugar in grams (g) per serving.'),
+  sodium: z
+    .number()
+    .describe('The amount of sodium in milligrams (mg) per serving.'),
+});
+export type ExtractFoodInfoOutput = z.infer<typeof ExtractFoodInfoOutputSchema>;
+
+export async function extractFoodInfoFromImage(
+  input: ExtractFoodInfoInput
+): Promise<ExtractFoodInfoOutput> {
+  return extractFoodInfoFlow(input);
+}
+
+const extractFoodInfoPrompt = ai.definePrompt({
+  name: 'extractFoodInfoPrompt',
+  input: {schema: ExtractFoodInfoInputSchema},
+  output: {schema: ExtractFoodInfoOutputSchema},
+  prompt: `You are an expert at reading food labels. Analyze the provided image of a food nutrition label and extract the following information in the specified JSON format. Be as accurate as possible. If a value is not present, use a sensible default like 0 for numerical values or an empty string for text.
+
+- productName: The name of the product.
+- ingredients: The full list of ingredients.
+- calories: The number of calories per serving.
+- fat: The total fat in grams.
+- sugar: The total sugars in grams.
+- sodium: The sodium in milligrams.
+
+Image: {{media url=imageDataUri}}`,
+});
+
+const extractFoodInfoFlow = ai.defineFlow(
+  {
+    name: 'extractFoodInfoFlow',
+    inputSchema: ExtractFoodInfoInputSchema,
+    outputSchema: ExtractFoodInfoOutputSchema,
+  },
+  async input => {
+    const {output} = await extractFoodInfoPrompt(input);
+    return output!;
+  }
+);
 
 const HealthConditionSchema = z.enum([
   'diabetes',
@@ -20,7 +78,9 @@ const HealthConditionSchema = z.enum([
 ]);
 
 const UserProfileSchema = z.object({
-  healthConditions: z.array(HealthConditionSchema).describe('The user selected health conditions'),
+  healthConditions: z
+    .array(HealthConditionSchema)
+    .describe('The user selected health conditions'),
   weightGoals: z.string().describe('The user selected weight goals'),
 });
 
@@ -29,19 +89,27 @@ const NutritionInformationSchema = z.object({
   fat: z.number().describe('The amount of fat in the food item'),
   sugar: z.number().describe('The amount of sugar in the food item'),
   sodium: z.number().describe('The amount of sodium in the food item'),
-  ingredients: z.array(z.string()).describe('A list of ingredients in the food item'),
+  ingredients: z
+    .array(z.string())
+    .describe('A list of ingredients in the food item'),
 });
 
 const FoodScanDataSchema = z.object({
-  foodLabelData: z.string().describe('The extracted text from the food label via OCR.'),
+  foodLabelData: z
+    .string()
+    .describe('The extracted text from the food label via OCR.'),
   nutritionInformation: NutritionInformationSchema.describe(
     'The nutrition information extracted from the food label.'
   ),
 });
 
 const PersonalizedFoodRecommendationsInputSchema = z.object({
-  userProfile: UserProfileSchema.describe('The user profile including health conditions and weight goals.'),
-  foodScanData: FoodScanDataSchema.describe('The food scan data including food label data and nutrition information.'),
+  userProfile: UserProfileSchema.describe(
+    'The user profile including health conditions and weight goals.'
+  ),
+  foodScanData: FoodScanDataSchema.describe(
+    'The food scan data including food label data and nutrition information.'
+  ),
 });
 export type PersonalizedFoodRecommendationsInput = z.infer<
   typeof PersonalizedFoodRecommendationsInputSchema
@@ -54,8 +122,12 @@ const FoodSafetyAssessmentSchema = z.enum([
 ]);
 
 const PersonalizedFoodRecommendationsOutputSchema = z.object({
-  assessment: FoodSafetyAssessmentSchema.describe('The overall safety assessment of the food.'),
-  explanation: z.string().describe('The explanation for the safety assessment.'),
+  assessment: FoodSafetyAssessmentSchema.describe(
+    'The overall safety assessment of the food.'
+  ),
+  explanation: z
+    .string()
+    .describe('The explanation for the safety assessment.'),
 });
 
 export type PersonalizedFoodRecommendationsOutput = z.infer<
