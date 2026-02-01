@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { getPersonalizedFoodRecommendations, extractFoodInfoFromImage } from '@/ai/flows/personalized-food-recommendations';
 import { addDoc, collection, doc, getDoc } from 'firebase/firestore';
 
@@ -31,7 +31,13 @@ export default function ScanPage() {
 
     const startCamera = async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            } 
+        });
         setHasCameraPermission(true);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -94,7 +100,6 @@ export default function ScanPage() {
     const imageDataUri = canvas.toDataURL('image/jpeg');
 
     const scansCollectionRef = collection(firestore, 'users', firebaseUser.uid, 'foodScans');
-    let scanDataForError: any;
 
     try {
       setAnalysisMessage('Reading food label with AI...');
@@ -155,7 +160,6 @@ export default function ScanPage() {
         },
         createdAt: new Date(),
       };
-      scanDataForError = scanData;
 
 
       const docRef = await addDoc(scansCollectionRef, scanData);
@@ -163,22 +167,21 @@ export default function ScanPage() {
       toast({ title: 'Analysis Complete!', description: 'Redirecting to results...' });
       router.push(`/scan/${docRef.id}`);
     } catch (error: any) {
-      if (error.name === 'FirebaseError' && error.code === 'permission-denied') {
-        const permissionError = new FirestorePermissionError({
-          path: scansCollectionRef.path,
-          operation: 'create',
-          requestResourceData: scanDataForError,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      }
-      
-      console.error(error);
-      toast({
+        console.error("Analysis Error:", error);
+        let userMessage = error.message || 'Could not analyze the food item. Please try again.';
+
+        if (error.name === 'FirebaseError' && error.code === 'permission-denied') {
+            userMessage = 'You do not have permission to save scans. Please try again or contact support.';
+        } else if (error.message.includes('Could not read the product name or ingredients')) {
+            userMessage = 'Could not read the label clearly. Please try again with a clearer, well-lit image.';
+        }
+        
+        toast({
         variant: 'destructive',
         title: 'Analysis Failed',
-        description: error.message || 'Could not analyze the food item. Please try again.',
-      });
-      setScanState('camera');
+        description: userMessage,
+        });
+        setScanState('camera');
     }
   };
 

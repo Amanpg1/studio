@@ -7,9 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Trash2, Loader2 } from 'lucide-react';
+import { Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useUser, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 
 const getAssessmentVariant = (assessment: Scan['result']['assessment']) => {
     switch (assessment) {
@@ -34,7 +34,7 @@ export default function HistoryPage() {
         );
     }, [firebaseUser, firestore]);
 
-    const { data: scans, isLoading: scansLoading } = useCollection<Scan>(scansQuery);
+    const { data: scans, isLoading: scansLoading, error: scansError } = useCollection<Scan>(scansQuery);
 
     const validScans = useMemo(() => scans?.filter(s => s && s.result) ?? [], [scans]);
 
@@ -51,14 +51,10 @@ export default function HistoryPage() {
                 });
             })
             .catch((serverError) => {
-                const permissionError = new FirestorePermissionError({
-                    path: scanDocRef.path,
-                    operation: 'delete',
-                });
-                errorEmitter.emit('permission-error', permissionError);
+                console.error("Scan deletion failed:", serverError);
                 toast({
                     variant: 'destructive',
-                    title: "Deletion failed",
+                    title: "Deletion Failed",
                     description: "Could not delete the scan. Please try again.",
                 });
             })
@@ -68,6 +64,31 @@ export default function HistoryPage() {
     };
 
     const loading = authLoading || scansLoading;
+
+    if (scansError) {
+        return (
+             <div className="space-y-6">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Scan History</h2>
+                    <p className="text-muted-foreground">
+                        Review your previously scanned items and their assessments.
+                    </p>
+                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="h-5 w-5" />
+                            Error Loading History
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p>We couldn't load your scan history. Please try again later.</p>
+                        <p className="text-xs text-muted-foreground mt-2">{scansError.message}</p>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
 
     if (loading) {
         return (

@@ -41,10 +41,33 @@ export default function ScanResultPage({ params }: { params: { id: string } }) {
         return doc(firestore, 'users', firebaseUser.uid, 'foodScans', params.id);
     }, [params.id, firestore, firebaseUser]);
 
-    const { data: scan, isLoading } = useDoc<Scan>(scanDocRef);
+    const { data: scan, isLoading, error } = useDoc<Scan>(scanDocRef);
 
     if (isLoading) {
         return <FullScreenLoader />;
+    }
+
+    if (error) {
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Analysis Result</h2>
+                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="h-5 w-5" />
+                            Error Loading Scan
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">
+                            There was a problem retrieving this scan result. It might have been deleted or you may not have permission to view it.
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+        );
     }
 
     if (!scan) {

@@ -3,12 +3,13 @@
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { History, PlusCircle, ScanLine } from 'lucide-react';
+import { History, PlusCircle, ScanLine, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import type { Scan } from '@/lib/types';
 import { InlineLoader } from '@/components/loader';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 function StatCard({ title, value, icon: Icon, description }: { title: string, value: string, icon: React.ElementType, description: string }) {
     return (
@@ -37,7 +38,7 @@ export default function DashboardPage() {
     );
   }, [firebaseUser, firestore]);
   
-  const { data: scans, isLoading } = useCollection<Scan>(scansQuery);
+  const { data: scans, isLoading, error } = useCollection<Scan>(scansQuery);
 
   const stats = useMemo(() => {
     if (!scans) {
@@ -52,6 +53,26 @@ export default function DashboardPage() {
   }, [scans]);
 
   const recentScans = useMemo(() => scans?.filter(s => s && s.result).slice(0, 5) ?? [], [scans]);
+
+  if (error) {
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
+                    <p className="text-muted-foreground">Here's a summary of your scanning activity.</p>
+                </div>
+            </div>
+            <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Error Loading Dashboard</AlertTitle>
+                <AlertDescription>
+                    We couldn't load your data. Please try refreshing the page.
+                </AlertDescription>
+            </Alert>
+        </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

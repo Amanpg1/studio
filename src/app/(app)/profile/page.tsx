@@ -2,7 +2,7 @@
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useUser, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, setDoc } from 'firebase/firestore';
 import { ProfileFormSchema, type ProfileFormValues } from '@/lib/schemas';
@@ -87,13 +87,12 @@ export default function ProfilePage() {
         }
       })
       .catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'update',
-          requestResourceData: dataToSave,
+        console.error('Profile update failed:', serverError);
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: 'Could not save your profile. Please check your connection and try again.',
         });
-        errorEmitter.emit('permission-error', permissionError);
-        // The global error listener will catch this and display an overlay
       })
       .finally(() => {
         setIsSubmitting(false);
