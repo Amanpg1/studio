@@ -218,8 +218,17 @@ export default function ScanPage() {
               <div className="w-full max-w-md aspect-video bg-muted rounded-md overflow-hidden relative flex items-center justify-center">
                 <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
                 <canvas ref={canvasRef} className="hidden" />
+                 {/* Scanner Overlay */}
+                 <div className="absolute inset-2 pointer-events-none">
+                    <div className="w-full h-full border-2 border-dashed border-primary/70 rounded-md" />
+                    <div className="absolute -top-1 -left-1 w-10 h-10 border-t-4 border-l-4 border-primary rounded-tl-md"></div>
+                    <div className="absolute -top-1 -right-1 w-10 h-10 border-t-4 border-r-4 border-primary rounded-tr-md"></div>
+                    <div className="absolute -bottom-1 -left-1 w-10 h-10 border-b-4 border-l-4 border-primary rounded-bl-md"></div>
+                    <div className="absolute -bottom-1 -right-1 w-10 h-10 border-b-4 border-r-4 border-primary rounded-br-md"></div>
+                </div>
+
                 {hasCameraPermission === false && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-black/70">
                         <Video className="h-12 w-12 text-destructive mb-4" />
                         <Alert variant="destructive">
                           <AlertTitle>Camera Access Required</AlertTitle>

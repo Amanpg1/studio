@@ -24,14 +24,14 @@ const ExtractFoodInfoInputSchema = z.object({
 export type ExtractFoodInfoInput = z.infer<typeof ExtractFoodInfoInputSchema>;
 
 const ExtractFoodInfoOutputSchema = z.object({
-  productName: z.string().describe('The name of the food product.'),
-  ingredients: z.string().describe('The complete list of ingredients.'),
-  calories: z.number().describe('The number of calories per serving.'),
-  fat: z.number().describe('The amount of fat in grams (g) per serving.'),
-  sugar: z.number().describe('The amount of sugar in grams (g) per serving.'),
+  productName: z.string().describe('The name of the food product, usually the most prominent text on the packaging.'),
+  ingredients: z.string().describe("The complete list of ingredients, often labeled as 'Ingredients:'."),
+  calories: z.number().describe('The number of calories per serving, found in the nutrition facts table.'),
+  fat: z.number().describe('The amount of fat in grams (g) per serving, found in the nutrition facts table.'),
+  sugar: z.number().describe('The amount of sugar in grams (g) per serving, found in the nutrition facts table.'),
   sodium: z
     .number()
-    .describe('The amount of sodium in milligrams (mg) per serving.'),
+    .describe('The amount of sodium in milligrams (mg) per serving, found in the nutrition facts table.'),
 });
 export type ExtractFoodInfoOutput = z.infer<typeof ExtractFoodInfoOutputSchema>;
 
@@ -45,7 +45,7 @@ const extractFoodInfoPrompt = ai.definePrompt({
   name: 'extractFoodInfoPrompt',
   input: {schema: ExtractFoodInfoInputSchema},
   output: {schema: ExtractFoodInfoOutputSchema},
-  prompt: `You are an expert at reading food labels. Analyze the provided image of a food nutrition label and extract the following information in the specified JSON format. Be as accurate as possible. If a value is not present, use a sensible default like 0 for numerical values or an empty string for text.
+  prompt: `You are an expert at reading food packaging and labels. Your task is to analyze the provided image and extract key information. The image might contain a nutrition facts panel, an ingredients list, or both. Be as accurate as possible. If a value is not present, use a sensible default like 0 for numerical values or an empty string for text.
 
 - productName: The name of the product.
 - ingredients: The full list of ingredients.
@@ -53,6 +53,8 @@ const extractFoodInfoPrompt = ai.definePrompt({
 - fat: The total fat in grams.
 - sugar: The total sugars in grams.
 - sodium: The sodium in milligrams.
+
+Carefully examine the entire image to find all the required pieces of information.
 
 Image: {{media url=imageDataUri}}`,
 });
