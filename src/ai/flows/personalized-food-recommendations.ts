@@ -50,7 +50,7 @@ const extractFoodInfoPrompt = ai.definePrompt({
 
 Extract the following details:
 - productName: The name of the product.
-- ingredients: The full list of ingredients.
+- ingredients: The full list of ingredients as a single string.
 - servingSizeGrams: The serving size in grams (g). If it's in another unit like 'ml' or 'pieces', try to find a gram equivalent if listed (e.g., "1 cup (227g)"). If not available, leave it out.
 - calories: The number of calories per serving.
 - fat: The total fat in grams (g) per serving.
@@ -99,8 +99,8 @@ const NutritionInformationSchema = z.object({
   sugar: z.number().describe('The amount of sugar in the food item'),
   sodium: z.number().describe('The amount of sodium in the food item'),
   ingredients: z
-    .array(z.string())
-    .describe('A list of ingredients in the food item'),
+    .string()
+    .describe('The full string of ingredients in the food item.'),
 });
 
 const FoodScanDataSchema = z.object({
@@ -156,19 +156,24 @@ const personalizedFoodRecommendationsPrompt = ai.definePrompt({
   prompt: `You are an AI assistant that provides personalized food recommendations based on a user's health conditions and food scan data.
 
   User Profile:
-  Health Conditions: {{userProfile.healthConditions}}
+  Health Conditions: {{#if userProfile.healthConditions}}{{#each userProfile.healthConditions}}- {{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{else}}None specified{{/if}}
   Detailed Health Problems: {{userProfile.detailedHealthConditions}}
   Weight Goals: {{userProfile.weightGoals}}
 
   Carefully consider the user's "Detailed Health Problems" when making your assessment. This provides critical context beyond the standard health conditions.
 
   Food Scan Data:
-  Food Label Data: {{foodScanData.foodLabelData}}
-  Nutrition Information: {{foodScanData.nutritionInformation}}
+  Raw OCR Text: {{foodScanData.foodLabelData}}
+  Structured Nutrition Information:
+  - Calories: {{foodScanData.nutritionInformation.calories}}
+  - Fat: {{foodScanData.nutritionInformation.fat}}g
+  - Sugar: {{foodScanData.nutritionInformation.sugar}}g
+  - Sodium: {{foodScanData.nutritionInformation.sodium}}mg
+  - Ingredients: {{foodScanData.nutritionInformation.ingredients}}
 
-  Based on the user's health conditions and the food scan data, assess the food's safety and provide an explanation for the assessment.
-  The assessment should be one of the following: "Safe to Eat", "Consume in Moderation", or "Not Safe".
-  The explanation should outline the specific ingredients or nutritional values that triggered the assessment, paying close attention to the detailed health problems.
+  Based on all the provided user and food data, assess the food's safety and provide an explanation for the assessment.
+  The assessment must be one of the following: "Safe to Eat", "Consume in Moderation", or "Not Safe".
+  The explanation should outline the specific ingredients or nutritional values that triggered the assessment, paying close attention to the user's detailed health problems.
 
   Example 1:
   User Profile:
@@ -176,8 +181,8 @@ const personalizedFoodRecommendationsPrompt = ai.definePrompt({
   Detailed Health Problems: "I am trying to avoid all forms of added sugar and I am sensitive to gluten."
   Weight Goals: "lose weight"
   Food Scan Data:
-  Food Label Data: "Ingredients: High Fructose Corn Syrup, Enriched Flour, Sugar, ..."
-  Nutrition Information: {calories: 200, fat: 5, sugar: 20, sodium: 100}
+  Raw OCR Text: "Product: Sugary Cereal. Ingredients: High Fructose Corn Syrup, Enriched Flour, Sugar,..."
+  Structured Nutrition Information: {calories: 200, fat: 5, sugar: 20, sodium: 100, ingredients: "High Fructose Corn Syrup, Enriched Flour, Sugar,..."}
   Output:
   {assessment: "Not Safe", explanation: "This food is high in sugar, which is not suitable for people with diabetes. It also contains High Fructose Corn Syrup and Enriched Flour (gluten), which you are trying to avoid based on your detailed health problems."}
 
@@ -186,22 +191,10 @@ const personalizedFoodRecommendationsPrompt = ai.definePrompt({
   Health Conditions: ["allergies"]
   Weight Goals: "maintain weight"
   Food Scan Data:
-  Food Label Data: "Ingredients: Milk, Eggs, Wheat, ..."
-  Nutrition Information: {calories: 150, fat: 3, sugar: 10, sodium: 50}
+  Raw OCR Text: "Product: Snack bar. Ingredients: Milk, Eggs, Wheat,..."
+  Structured Nutrition Information: {calories: 150, fat: 3, sugar: 10, sodium: 50, ingredients: "Milk, Eggs, Wheat,..."}
   Output:
   {assessment: "Not Safe", explanation: "This food contains milk, eggs, and wheat, which are common allergens. It is not safe for people with allergies."}
-
-  Example 3:
-  User Profile:
-  Health Conditions: []
-  Weight Goals: "gain weight"
-  Food Scan Data:
-  Food Label Data: "Ingredients: Chicken, Rice, Vegetables, ..."
-  Nutrition Information: {calories: 300, fat: 10, sugar: 5, sodium: 150}
-  Output:
-  {assessment: "Safe to Eat", explanation: "This food appears to be safe to eat. It contains a balanced combination of nutrients and is not high in sugar or sodium."}
-
-  Output:
   `,
 });
 

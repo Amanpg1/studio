@@ -34,8 +34,8 @@ export default function ScanPage() {
         stream = await navigator.mediaDevices.getUserMedia({ 
             video: { 
                 facingMode: 'environment',
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
             } 
         });
         setHasCameraPermission(true);
@@ -102,21 +102,20 @@ export default function ScanPage() {
     const scansCollectionRef = collection(firestore, 'users', firebaseUser.uid, 'foodScans');
 
     try {
-      setAnalysisMessage('Reading food label with AI...');
+      setAnalysisMessage('Captured! Reading food label with AI...');
       const extractedData = await extractFoodInfoFromImage({ imageDataUri });
 
       if (!extractedData.productName || !extractedData.ingredients) {
         throw new Error('Could not read the product name or ingredients from the label. Please try again with a clearer image.');
       }
 
-      setAnalysisMessage('Loading your health profile...');
+      setAnalysisMessage('Analyzing against your health profile...');
       const userDoc = await getDoc(doc(firestore, 'users', firebaseUser.uid));
       if (!userDoc.exists()) {
         throw new Error('User profile not found. Please complete your profile first.');
       }
       const userProfile = userDoc.data() as UserProfile;
 
-      setAnalysisMessage('Performing personalized analysis...');
       const scanInput: ScanInput = {
         productName: extractedData.productName,
         ingredients: extractedData.ingredients,
@@ -129,27 +128,30 @@ export default function ScanPage() {
         },
       };
 
+      const nutritionString = `Calories: ${extractedData.calories}, Fat: ${extractedData.fat}g, Sugar: ${extractedData.sugar}g, Sodium: ${extractedData.sodium}mg`;
+      const foodLabelData = `Product Name: ${extractedData.productName}. Ingredients: ${extractedData.ingredients}. Nutrition: ${nutritionString}`;
+
       const aiInput = {
         userProfile: {
-          healthConditions: userProfile.healthConditions,
-          detailedHealthConditions: userProfile.detailedHealthConditions,
+          healthConditions: userProfile.healthConditions || [],
+          detailedHealthConditions: userProfile.detailedHealthConditions || '',
           weightGoals: userProfile.weightGoals,
         },
         foodScanData: {
-          foodLabelData: `Product: ${extractedData.productName}. Ingredients: ${extractedData.ingredients}. Serving size: ${extractedData.servingSizeGrams || 'N/A'}g`,
+          foodLabelData: foodLabelData, // Pass a comprehensive string
           nutritionInformation: {
             calories: extractedData.calories,
             fat: extractedData.fat,
             sugar: extractedData.sugar,
             sodium: extractedData.sodium,
-            ingredients: extractedData.ingredients.split(',').map(s => s.trim()),
+            ingredients: extractedData.ingredients, // Pass the raw string
           },
         },
       };
 
       const aiResult = await getPersonalizedFoodRecommendations(aiInput);
 
-      setAnalysisMessage('Saving results...');
+      setAnalysisMessage('Finalizing and saving your scan...');
       const scanData: Omit<Scan, 'id'> = {
         userId: firebaseUser.uid,
         productName: extractedData.productName,
@@ -192,7 +194,7 @@ export default function ScanPage() {
           <Card>
             <CardHeader>
               <CardTitle>Scan Food Label</CardTitle>
-              <CardDescription>Position the food label within the frame and capture.</CardDescription>
+              <CardDescription>Position the product's nutrition label and ingredients list clearly inside the frame.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
               <div className="w-full max-w-md aspect-video bg-muted rounded-md overflow-hidden relative flex items-center justify-center">
@@ -237,7 +239,7 @@ export default function ScanPage() {
         return (
           <Card className="flex flex-col items-center justify-center p-12 space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-lg font-medium text-muted-foreground">Analyzing Food Label...</p>
+            <p className="text-lg font-medium text-muted-foreground">Analyzing...</p>
             <p className="text-sm text-muted-foreground">{analysisMessage}</p>
           </Card>
         );
