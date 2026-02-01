@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { collection, query, where, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
 import type { Scan } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useUser, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 
 const getAssessmentVariant = (assessment: Scan['result']['assessment']) => {
     switch (assessment) {
@@ -29,33 +29,40 @@ export default function HistoryPage() {
     const scansQuery = useMemoFirebase(() => {
         if (!firebaseUser || !firestore) return null;
         return query(
-            collection(firestore, "scans"),
-            where("userId", "==", firebaseUser.uid),
+            collection(firestore, "users", firebaseUser.uid, "foodScans"),
             orderBy("createdAt", "desc")
         );
     }, [firebaseUser, firestore]);
 
     const { data: scans, isLoading: scansLoading } = useCollection<Scan>(scansQuery);
 
-    const handleDelete = async (scanId: string) => {
+    const handleDelete = (scanId: string) => {
         if (!firebaseUser || !firestore) return;
         setIsDeleting(scanId);
-        try {
-            const scanDocRef = doc(firestore, 'scans', scanId);
-            await deleteDoc(scanDocRef);
-            toast({
-                title: "Scan deleted",
-                description: "The scan has been removed from your history.",
+        const scanDocRef = doc(firestore, 'users', firebaseUser.uid, 'foodScans', scanId);
+        
+        deleteDoc(scanDocRef)
+            .then(() => {
+                toast({
+                    title: "Scan deleted",
+                    description: "The scan has been removed from your history.",
+                });
+            })
+            .catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: scanDocRef.path,
+                    operation: 'delete',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({
+                    variant: 'destructive',
+                    title: "Deletion failed",
+                    description: "Could not delete the scan. Please try again.",
+                });
+            })
+            .finally(() => {
+                setIsDeleting(null);
             });
-        } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: "Deletion failed",
-                description: "Could not delete the scan. Please try again.",
-            });
-        } finally {
-            setIsDeleting(null);
-        }
     };
 
     const loading = authLoading || scansLoading;
@@ -114,7 +121,7 @@ export default function HistoryPage() {
                                             </Badge>
                                         </div>
                                         <p className="text-sm text-muted-foreground">
-                                            Scanned on {new Date(scan.createdAt.seconds * 1000).toLocaleDateString()}
+                                            Scanned on {new Date((scan.createdAt as any).seconds * 1000).toLocaleDateString()}
                                         </p>
                                     </Link>
                                     <div className="ml-4">

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle2, Info, ShieldAlert, Zap } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { FullScreenLoader } from '@/components/loader';
 
 const assessmentDetails = {
@@ -35,11 +35,12 @@ const assessmentDetails = {
 };
 
 export default function ScanResultPage({ params }: { params: { id: string } }) {
+    const { user: firebaseUser } = useUser();
     const firestore = useFirestore();
     const scanDocRef = useMemoFirebase(() => {
-        if (!params.id || !firestore) return null;
-        return doc(firestore, 'scans', params.id);
-    }, [params.id, firestore]);
+        if (!params.id || !firestore || !firebaseUser) return null;
+        return doc(firestore, 'users', firebaseUser.uid, 'foodScans', params.id);
+    }, [params.id, firestore, firebaseUser]);
 
     const { data: scan, isLoading } = useDoc<Scan>(scanDocRef);
 

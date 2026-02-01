@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { History, PlusCircle, ScanLine } from 'lucide-react';
 import Link from 'next/link';
 import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import type { Scan } from '@/lib/types';
 import { InlineLoader } from '@/components/loader';
 
@@ -32,8 +32,7 @@ export default function DashboardPage() {
   const scansQuery = useMemoFirebase(() => {
     if (!firebaseUser || !firestore) return null;
     return query(
-      collection(firestore, "scans"), 
-      where("userId", "==", firebaseUser.uid),
+      collection(firestore, "users", firebaseUser.uid, "foodScans"), 
       orderBy("createdAt", "desc")
     );
   }, [firebaseUser, firestore]);
@@ -112,7 +111,7 @@ export default function DashboardPage() {
                       <p className="text-sm text-muted-foreground">{scan.result.assessment}</p>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(scan.createdAt.seconds * 1000).toLocaleDateString()}
+                      {new Date((scan.createdAt as any).seconds * 1000).toLocaleDateString()}
                     </p>
                   </Link>
                 </li>

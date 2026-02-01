@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { ScanFormSchema, type ScanFormValues } from '@/lib/schemas';
 import { getPersonalizedFoodRecommendations } from '@/ai/flows/personalized-food-recommendations';
-import { addDoc, collection, doc, getDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,12 +63,16 @@ export default function ScanPage() {
         return;
     }
     setScanState('submitting');
+
+    const scansCollectionRef = collection(firestore, 'users', firebaseUser.uid, 'foodScans');
+    let scanDataForError: any;
+
     try {
       const validatedValues = ScanFormSchema.parse(data);
 
       const userDoc = await getDoc(doc(firestore, 'users', firebaseUser.uid));
       if (!userDoc.exists()) {
-        throw new Error('User profile not found.');
+        throw new Error('User profile not found. Please complete your profile.');
       }
       const userProfile = userDoc.data() as UserProfile;
 
@@ -112,18 +116,30 @@ export default function ScanPage() {
         },
         createdAt: new Date(),
       };
+      scanDataForError = scanData;
 
-      const docRef = await addDoc(collection(firestore, 'scans'), scanData);
+
+      const docRef = await addDoc(scansCollectionRef, scanData);
       
       const newScanId = docRef.id;
       toast({ title: 'Analysis Complete!', description: 'Redirecting to results...' });
       router.push(`/scan/${newScanId}`);
-    } catch (error) {
+    } catch (error: any) {
+      // Check if it's a Firestore error that we should report
+      if (error.name === 'FirebaseError' && error.code === 'permission-denied') {
+        const permissionError = new FirestorePermissionError({
+          path: scansCollectionRef.path,
+          operation: 'create',
+          requestResourceData: scanDataForError,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      }
+      
       console.error(error);
       toast({
         variant: 'destructive',
         title: 'Analysis Failed',
-        description: 'Could not analyze the food item. Please try again.',
+        description: error.message || 'Could not analyze the food item. Please try again.',
       });
       setScanState('form');
     }
@@ -208,7 +224,7 @@ export default function ScanPage() {
                       name={nutrient}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="capitalize">{nutrient} {nutrient === 'calories' ? '(kcal)' : '(g)'}</FormLabel>
+                          <FormLabel className="capitalize">{nutrient} {nutrient === 'calories' ? '(kcal)' : (nutrient === 'sodium' ? '(mg)' : '(g)')}</FormLabel>
                           <FormControl>
                             <Input type="number" step="0.1" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} />
                           </FormControl>
