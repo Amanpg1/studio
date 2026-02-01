@@ -5,6 +5,24 @@
       "description": "A person scanning a food product with their smartphone, with nutritional information graphics overlaid.",
       "imageUrl": "https://images.unsplash.com/photo-1723060611549-7780738f2cb4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwaG9uZSUyMHNjYW5uaW5nJTIwZm9vZHxlbnwwfHx8fDE3Njk5MjU3ODB8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "phone scanning food"
+    },
+    {
+      "id": "carousel-1",
+      "description": "A close-up of a nutritional facts label on a food package.",
+      "imageUrl": "https://images.unsplash.com/photo-1763757933131-93f78c24f012?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxudXRyaXRpb24lMjBsYWJlbHxlbnwwfHx8fDE3Njk5MzEyMzJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "nutrition label"
+    },
+    {
+      "id": "carousel-2",
+      "description": "A person reviewing their health data on a smartphone with a vibrant chart display.",
+      "imageUrl": "https://images.unsplash.com/photo-1576091160501-bbe57469278b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxoZWFsdGglMjBhcHB8ZW58MHx8fHwxNzY5OTMxMjMyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "health app"
+    },
+    {
+      "id": "carousel-3",
+      "description": "An abstract digital visualization of data points and connections, representing AI analysis.",
+      "imageUrl": "https://images.unsplash.com/photo-1636690498207-d7b393423b9a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxBSSUyMGRhdGF8ZW58MHx8fHwxNzY5OTMxMjMyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "AI data"
     }
   ]
 }

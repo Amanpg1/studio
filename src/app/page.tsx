@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Camera, HeartPulse, History } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,6 +9,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function LandingPage() {
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-1');
+  const carouselImages = PlaceHolderImages.filter((img) => img.id.startsWith('carousel-'));
 
   const features = [
     {
@@ -82,6 +84,41 @@ export default function LandingPage() {
               )}
             </div>
           </div>
+        </section>
+
+        {/* Carousel Section */}
+        <section className="container pb-8 md:pb-12 lg:pb-16">
+          <Carousel className="w-full max-w-4xl mx-auto"
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+          >
+            <CarouselContent>
+              {carouselImages.map((image) => (
+                <CarouselItem key={image.id} className="md:basis-1/2 lg:basis-1/3">
+                  <div className="p-1">
+                    <Card>
+                      <CardContent className="relative flex aspect-video items-center justify-center p-0 overflow-hidden rounded-lg">
+                        <Image
+                          src={image.imageUrl}
+                          alt={image.description}
+                          fill
+                          style={{ objectFit: 'cover' }}
+                          data-ai-hint={image.imageHint}
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-end p-4">
+                            <p className="text-white text-sm">{image.description}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </section>
 
         {/* Features Section */}
