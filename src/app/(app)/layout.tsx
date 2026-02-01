@@ -52,18 +52,36 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: userProfile, isLoading: profileLoading } = useDoc<UserProfile>(userDocRef);
 
   useEffect(() => {
-    if (!authLoading && !firebaseUser) {
+    // This effect handles all redirection logic.
+    if (authLoading) return; // Wait until auth state is known
+
+    if (!firebaseUser) {
+      // If no user, redirect to login.
       router.replace(`/login?redirectedFrom=${pathname}`);
+      return;
     }
-  }, [firebaseUser, authLoading, router, pathname]);
 
-  const isLoading = authLoading || (!!firebaseUser && profileLoading);
+    if (profileLoading) return; // Wait for profile to load
 
-  if (isLoading || !userProfile) {
+    if (!userProfile && pathname !== '/profile') {
+      // If user exists but profile doesn't, redirect to create one.
+      router.replace('/profile?new=true');
+    }
+  }, [authLoading, firebaseUser, profileLoading, userProfile, pathname, router]);
+
+  // Determine if we should show the main app UI or a loader.
+  // We show a loader if:
+  // 1. Auth is still loading.
+  // 2. We have a user, but their profile is still loading.
+  // 3. We have a user but no profile, and we are not on the profile page (a redirect is pending).
+  const showLoader = authLoading || (firebaseUser && profileLoading) || (!userProfile && pathname !== '/profile');
+
+  if (showLoader) {
     return <FullScreenLoader />;
   }
-
+  
   const handleSignOut = async () => {
+    if (!auth) return;
     await firebaseSignOut(auth);
     router.push('/');
   };
@@ -115,7 +133,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <Bell className="h-5 w-5" />
                 <span className="sr-only">Notifications</span>
               </Button>
-              <UserNav user={userProfile} onSignOut={handleSignOut} />
+              {/* Only render UserNav if we have a user profile */}
+              {userProfile && <UserNav user={userProfile} onSignOut={handleSignOut} />}
             </div>
           </header>
           <div className="p-4 sm:p-6">{children}</div>
