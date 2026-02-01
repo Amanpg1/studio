@@ -70,7 +70,7 @@ export default function ScanPage() {
       // Cleanup when component unmounts
       stopCamera();
     };
-  }, [scanState, toast]);
+  }, [scanState]);
 
 
   const handleCaptureAndAnalyze = async () => {

@@ -144,7 +144,7 @@ export default function HistoryPage() {
                                             </Badge>
                                         </div>
                                         <p className="text-sm text-muted-foreground">
-                                            {scan.createdAt && `Scanned on ${new Date((scan.createdAt as any).seconds * 1000).toLocaleDateString()}`}
+                                            {scan.createdAt && `Scanned on ${(scan.createdAt as any).seconds ? new Date((scan.createdAt as any).seconds * 1000).toLocaleDateString() : new Date(scan.createdAt as any).toLocaleDateString()}`}
                                         </p>
                                     </Link>
                                     <div className="ml-4">
