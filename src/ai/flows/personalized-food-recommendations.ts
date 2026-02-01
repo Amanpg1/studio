@@ -81,6 +81,10 @@ const UserProfileSchema = z.object({
   healthConditions: z
     .array(HealthConditionSchema)
     .describe('The user selected health conditions'),
+  detailedHealthConditions: z
+    .string()
+    .optional()
+    .describe("A detailed description of the user's personal health problems."),
   weightGoals: z.string().describe('The user selected weight goals'),
 });
 
@@ -148,7 +152,10 @@ const personalizedFoodRecommendationsPrompt = ai.definePrompt({
 
   User Profile:
   Health Conditions: {{userProfile.healthConditions}}
+  Detailed Health Problems: {{userProfile.detailedHealthConditions}}
   Weight Goals: {{userProfile.weightGoals}}
+
+  Carefully consider the user's "Detailed Health Problems" when making your assessment. This provides critical context beyond the standard health conditions.
 
   Food Scan Data:
   Food Label Data: {{foodScanData.foodLabelData}}
@@ -156,17 +163,18 @@ const personalizedFoodRecommendationsPrompt = ai.definePrompt({
 
   Based on the user's health conditions and the food scan data, assess the food's safety and provide an explanation for the assessment.
   The assessment should be one of the following: "Safe to Eat", "Consume in Moderation", or "Not Safe".
-  The explanation should outline the specific ingredients or nutritional values that triggered the assessment.
+  The explanation should outline the specific ingredients or nutritional values that triggered the assessment, paying close attention to the detailed health problems.
 
   Example 1:
   User Profile:
   Health Conditions: ["diabetes"]
+  Detailed Health Problems: "I am trying to avoid all forms of added sugar and I am sensitive to gluten."
   Weight Goals: "lose weight"
   Food Scan Data:
   Food Label Data: "Ingredients: High Fructose Corn Syrup, Enriched Flour, Sugar, ..."
   Nutrition Information: {calories: 200, fat: 5, sugar: 20, sodium: 100}
   Output:
-  {assessment: "Consume in Moderation", explanation: "This food is high in sugar, which may not be suitable for people with diabetes.  It is also high in calories and may hinder your weight loss goals."}
+  {assessment: "Not Safe", explanation: "This food is high in sugar, which is not suitable for people with diabetes. It also contains High Fructose Corn Syrup and Enriched Flour (gluten), which you are trying to avoid based on your detailed health problems."}
 
   Example 2:
   User Profile:

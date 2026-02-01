@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FullScreenLoader } from '@/components/loader';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function ProfilePage() {
   const { user: firebaseUser, isUserLoading: authLoading } = useUser();
@@ -39,6 +40,7 @@ export default function ProfilePage() {
     defaultValues: {
       name: '',
       healthConditions: [],
+      detailedHealthConditions: '',
       weightGoals: 'maintain weight',
     },
   });
@@ -48,6 +50,7 @@ export default function ProfilePage() {
       form.reset({
         name: userProfile.name,
         healthConditions: userProfile.healthConditions || [],
+        detailedHealthConditions: userProfile.detailedHealthConditions || '',
         weightGoals: userProfile.weightGoals || 'maintain weight',
       });
     }
@@ -180,6 +183,26 @@ export default function ProfilePage() {
                       />
                     ))}
                     </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="detailedHealthConditions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Detailed Health Problems</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe any other health concerns, allergies, or dietary restrictions AI should know about..."
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      This information will be sent to our AI agent to provide more personalized analysis.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

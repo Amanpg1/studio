@@ -15,6 +15,7 @@ export const LoginSchema = z.object({
 export const ProfileFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(50, 'Name is too long'),
   healthConditions: z.array(z.enum(ALL_HEALTH_CONDITIONS)).optional(),
+  detailedHealthConditions: z.string().optional(),
   weightGoals: z.enum(ALL_WEIGHT_GOALS),
 });
 

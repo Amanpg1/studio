@@ -27,6 +27,7 @@ export type UserProfile = {
   email: string;
   name: string;
   healthConditions: HealthCondition[];
+  detailedHealthConditions?: string;
   weightGoals: WeightGoal;
   createdAt: Date | Timestamp;
 };

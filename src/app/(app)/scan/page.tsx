@@ -150,6 +150,7 @@ export default function ScanPage() {
       const aiInput = {
         userProfile: {
           healthConditions: userProfile.healthConditions,
+          detailedHealthConditions: userProfile.detailedHealthConditions,
           weightGoals: userProfile.weightGoals,
         },
         foodScanData: {
