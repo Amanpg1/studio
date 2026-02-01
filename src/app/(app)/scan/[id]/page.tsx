@@ -1,6 +1,6 @@
 'use client';
 
-import { doc, Timestamp } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import type { Scan } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,6 +78,13 @@ export default function ScanResultPage({ params }: { params: { id: string } }) {
     }
 
     const details = assessmentDetails[scan.result.assessment];
+    const { servingSizeGrams, calories, fat, sugar, sodium } = scan.input?.nutrition || {};
+    const hasServingSize = typeof servingSizeGrams === 'number' && servingSizeGrams > 0;
+
+    const per100g = (value?: number) => {
+        if (!hasServingSize || typeof value !== 'number' || servingSizeGrams! <= 0) return 'N/A';
+        return ((value / servingSizeGrams!) * 100).toFixed(1);
+    };
 
     return (
         <div className="space-y-6">
@@ -128,13 +135,28 @@ export default function ScanResultPage({ params }: { params: { id: string } }) {
                         <Separator />
                         <div>
                             <h4 className="font-semibold">Key Nutrition Facts</h4>
+                             <p className="text-sm text-muted-foreground mt-1">Per Serving ({servingSizeGrams ? `${servingSizeGrams}g` : 'N/A'})</p>
                              <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                                <li><strong>Calories:</strong> {scan.input?.nutrition?.calories ?? 'N/A'} kcal</li>
-                                <li><strong>Fat:</strong> {scan.input?.nutrition?.fat ?? 'N/A'} g</li>
-                                <li><strong>Sugar:</strong> {scan.input?.nutrition?.sugar ?? 'N/A'} g</li>
-                                <li><strong>Sodium:</strong> {scan.input?.nutrition?.sodium ?? 'N/A'} mg</li>
+                                <li><strong>Calories:</strong> {calories ?? 'N/A'} kcal</li>
+                                <li><strong>Fat:</strong> {fat ?? 'N/A'} g</li>
+                                <li><strong>Sugar:</strong> {sugar ?? 'N/A'} g</li>
+                                <li><strong>Sodium:</strong> {sodium ?? 'N/A'} mg</li>
                             </ul>
                         </div>
+                        {hasServingSize && (
+                            <>
+                                <Separator />
+                                <div>
+                                    <h4 className="font-semibold">Per 100g</h4>
+                                     <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                                        <li><strong>Calories:</strong> {per100g(calories)} kcal</li>
+                                        <li><strong>Fat:</strong> {per100g(fat)} g</li>
+                                        <li><strong>Sugar:</strong> {per100g(sugar)} g</li>
+                                        <li><strong>Sodium:</strong> {per100g(sodium)} mg</li>
+                                    </ul>
+                                </div>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
             </div>

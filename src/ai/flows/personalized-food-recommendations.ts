@@ -26,6 +26,7 @@ export type ExtractFoodInfoInput = z.infer<typeof ExtractFoodInfoInputSchema>;
 const ExtractFoodInfoOutputSchema = z.object({
   productName: z.string().describe('The name of the food product, usually the most prominent text on the packaging.'),
   ingredients: z.string().describe("The complete list of ingredients, often labeled as 'Ingredients:'."),
+  servingSizeGrams: z.number().optional().describe('The serving size in grams (g), if available.'),
   calories: z.number().describe('The number of calories per serving, found in the nutrition facts table.'),
   fat: z.number().describe('The amount of fat in grams (g) per serving, found in the nutrition facts table.'),
   sugar: z.number().describe('The amount of sugar in grams (g) per serving, found in the nutrition facts table.'),
@@ -45,16 +46,18 @@ const extractFoodInfoPrompt = ai.definePrompt({
   name: 'extractFoodInfoPrompt',
   input: {schema: ExtractFoodInfoInputSchema},
   output: {schema: ExtractFoodInfoOutputSchema},
-  prompt: `You are an expert at reading food packaging and labels. Your task is to analyze the provided image and extract key information. The image might contain a nutrition facts panel, an ingredients list, or both. Be as accurate as possible. If a value is not present, use a sensible default like 0 for numerical values or an empty string for text.
+  prompt: `You are an expert at reading food packaging and labels. Your task is to analyze the provided image and extract key information with the highest accuracy possible. The image might contain a nutrition facts panel, an ingredients list, or both.
 
+Extract the following details:
 - productName: The name of the product.
 - ingredients: The full list of ingredients.
+- servingSizeGrams: The serving size in grams (g). If it's in another unit like 'ml' or 'pieces', try to find a gram equivalent if listed (e.g., "1 cup (227g)"). If not available, leave it out.
 - calories: The number of calories per serving.
-- fat: The total fat in grams.
-- sugar: The total sugars in grams.
-- sodium: The sodium in milligrams.
+- fat: The total fat in grams (g) per serving.
+- sugar: The total sugars in grams (g) per serving.
+- sodium: The sodium in milligrams (mg) per serving.
 
-Carefully examine the entire image to find all the required pieces of information.
+If a value is not present, use a sensible default like 0 for numerical values or an empty string for text. Carefully examine the entire image to find all the required pieces of information.
 
 Image: {{media url=imageDataUri}}`,
 });

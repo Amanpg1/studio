@@ -41,6 +41,7 @@ export type ScanInput = {
   productName: string;
   ingredients: string;
   nutrition: {
+    servingSizeGrams?: number;
     calories: number;
     fat: number;
     sugar: number;
