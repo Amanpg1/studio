@@ -1,13 +1,18 @@
+'use client';
+
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Camera, HeartPulse, History } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Logo } from '@/components/logo';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import Autoplay from 'embla-carousel-autoplay';
 
 export default function LandingPage() {
+  const plugin = React.useRef(Autoplay({ delay: 3000, stopOnMouseEnter: true, stopOnInteraction: true }));
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-1');
   const carouselImages = PlaceHolderImages.filter((img) => img.id.startsWith('carousel-'));
 
@@ -88,9 +93,11 @@ export default function LandingPage() {
 
         {/* Carousel Section */}
         <section className="container pb-8 md:pb-12 lg:pb-16">
-          <Carousel className="w-full max-w-4xl mx-auto"
+          <Carousel
+            className="w-full max-w-4xl mx-auto"
+            plugins={[plugin.current]}
             opts={{
-              align: "start",
+              align: 'start',
               loop: true,
             }}
           >
@@ -108,7 +115,7 @@ export default function LandingPage() {
                           data-ai-hint={image.imageHint}
                         />
                         <div className="absolute inset-0 bg-black/40 flex items-end p-4">
-                            <p className="text-white text-sm">{image.description}</p>
+                          <p className="text-white text-sm">{image.description}</p>
                         </div>
                       </CardContent>
                     </Card>
