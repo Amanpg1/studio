@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { formatDate } from '@/lib/utils';
 
 const getAssessmentVariant = (assessment: Scan['result']['assessment']) => {
     switch (assessment) {
@@ -144,7 +145,7 @@ export default function HistoryPage() {
                                             </Badge>
                                         </div>
                                         <p className="text-sm text-muted-foreground">
-                                            {scan.createdAt && `Scanned on ${(scan.createdAt as any).seconds ? new Date((scan.createdAt as any).seconds * 1000).toLocaleDateString() : new Date(scan.createdAt as any).toLocaleDateString()}`}
+                                            {scan.createdAt && `Scanned on ${formatDate(scan.createdAt)}`}
                                         </p>
                                     </Link>
                                     <div className="ml-4">

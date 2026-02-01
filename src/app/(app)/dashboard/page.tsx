@@ -10,6 +10,7 @@ import { collection, query, orderBy } from 'firebase/firestore';
 import type { Scan } from '@/lib/types';
 import { InlineLoader } from '@/components/loader';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { formatDate } from '@/lib/utils';
 
 function StatCard({ title, value, icon: Icon, description }: { title: string, value: string, icon: React.ElementType, description: string }) {
     return (
@@ -136,7 +137,7 @@ export default function DashboardPage() {
                       <p className="text-sm text-muted-foreground">{scan.result.assessment}</p>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {scan.createdAt && ((scan.createdAt as any).seconds ? new Date((scan.createdAt as any).seconds * 1000).toLocaleDateString() : new Date(scan.createdAt as any).toLocaleDateString())}
+                      {formatDate(scan.createdAt)}
                     </p>
                   </Link>
                 </li>

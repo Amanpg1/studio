@@ -3,7 +3,7 @@
 import { doc } from 'firebase/firestore';
 import type { Scan } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CheckCircle2, Info, ShieldAlert, Zap, AlertTriangle, FileText, BarChart2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ShieldAlert, Zap, AlertTriangle, FileText } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { FullScreenLoader } from '@/components/loader';
@@ -132,84 +132,87 @@ export default function ScanResultPage({ params }: { params: { id: string } }) {
                     Detailed assessment for <span className="font-semibold">{scan.productName}</span>.
                 </p>
             </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                 <div className="lg:col-span-2 space-y-6">
+                    <Card className={details.className}>
+                        <CardHeader className="flex flex-row items-start gap-4 space-y-0">
+                            <details.icon className="h-10 w-10 flex-shrink-0" />
+                            <div>
+                                <CardTitle>{details.title}</CardTitle>
+                                <CardDescription className="text-inherit/80">{details.description}</CardDescription>
+                            </div>
+                        </CardHeader>
+                    </Card>
 
-            <Card className={details.className}>
-                <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                    <details.icon className="h-10 w-10 flex-shrink-0" />
-                    <div>
-                        <CardTitle>{details.title}</CardTitle>
-                        <CardDescription className="text-inherit/80">{details.description}</CardDescription>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                     <p className="text-sm font-semibold mt-2">AI-Powered Explanation:</p>
-                     <p className="text-sm text-inherit/90">{scan.result.explanation}</p>
-                </CardContent>
-            </Card>
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Card className="lg:col-span-1">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Info className="h-5 w-5 text-primary" /> Scanned Information
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <h4 className="font-semibold">Product Name</h4>
-                            <p className="text-muted-foreground">{scan.input?.productName || 'N/A'}</p>
-                        </div>
-                        <Separator />
-                        <div>
-                            <h4 className="font-semibold">Ingredients</h4>
-                            <p className="text-sm text-muted-foreground">{scan.input?.ingredients || 'N/A'}</p>
-                        </div>
-                         <Separator />
-                        <div>
-                            <h4 className="font-semibold">Key Nutrition Facts</h4>
-                             <p className="text-sm text-muted-foreground mt-1">Per Serving ({servingSizeGrams ? `${servingSizeGrams}g` : 'N/A'})</p>
-                             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                                <li><strong>Calories:</strong> {calories ?? 'N/A'} kcal</li>
-                                <li><strong>Fat:</strong> {fat ?? 'N/A'} g</li>
-                                <li><strong>Sugar:</strong> {sugar ?? 'N/A'} g</li>
-                                <li><strong>Sodium:</strong> {sodium ?? 'N/A'} mg</li>
-                            </ul>
-                        </div>
-                        {hasServingSize && (
-                            <>
-                                <Separator />
-                                <div>
-                                    <h4 className="font-semibold">Per 100g</h4>
-                                     <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                                        <li><strong>Calories:</strong> {per100g(calories)} kcal</li>
-                                        <li><strong>Fat:</strong> {per100g(fat)} g</li>
-                                        <li><strong>Sugar:</strong> {per100g(sugar)} g</li>
-                                        <li><strong>Sodium:</strong> {per100g(sodium)} mg</li>
-                                    </ul>
-                                </div>
-                            </>
-                        )}
-                    </CardContent>
-                </Card>
-                <div className="space-y-6 lg:col-span-2">
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                               <FileText className="h-5 w-5 text-primary" /> AI Product Summary
+                                <Zap className="h-5 w-5 text-primary" />
+                                AI-Powered Analysis
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">{scan.result.productSummary}</p>
+                        <CardContent className="space-y-6">
+                            <div>
+                                <h4 className="font-semibold text-lg mb-2">Product Summary</h4>
+                                <p className="text-muted-foreground">{scan.result.productSummary}</p>
+                            </div>
+                            <Separator />
+                            <div>
+                                <h4 className="font-semibold text-lg mb-2">Health Assessment Explanation</h4>
+                                <p className="text-muted-foreground">{scan.result.explanation}</p>
+                            </div>
+                            <Separator />
+                            <div>
+                                <h4 className="font-semibold text-lg mb-2">Nutritional Analysis</h4>
+                                <p className="text-muted-foreground">{scan.result.nutritionalAnalysis}</p>
+                            </div>
                         </CardContent>
                     </Card>
-                     <Card>
+                </div>
+
+                <div className="lg:col-span-1">
+                    <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                               <BarChart2 className="h-5 w-5 text-primary" /> AI Nutritional Analysis
+                                <FileText className="h-5 w-5 text-primary" /> Scanned Information
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">{scan.result.nutritionalAnalysis}</p>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <h4 className="font-semibold">Product Name</h4>
+                                <p className="text-muted-foreground">{scan.input?.productName || 'N/A'}</p>
+                            </div>
+                             <Separator />
+                            <div>
+                                <h4 className="font-semibold">Key Nutrition Facts</h4>
+                                <p className="text-sm text-muted-foreground mt-1">Per Serving ({servingSizeGrams ? `${servingSizeGrams}g` : 'N/A'})</p>
+                                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                                    <li><strong>Calories:</strong> {calories ?? 'N/A'} kcal</li>
+                                    <li><strong>Fat:</strong> {fat ?? 'N/A'} g</li>
+                                    <li><strong>Sugar:</strong> {sugar ?? 'N/A'} g</li>
+                                    <li><strong>Sodium:</strong> {sodium ?? 'N/A'} mg</li>
+                                </ul>
+                            </div>
+                            {hasServingSize && (
+                                <>
+                                    <Separator />
+                                    <div>
+                                        <h4 className="font-semibold">Per 100g (Calculated)</h4>
+                                        <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                                            <li><strong>Calories:</strong> {per100g(calories)} kcal</li>
+                                            <li><strong>Fat:</strong> {per100g(fat)} g</li>
+                                            <li><strong>Sugar:</strong> {per100g(sugar)} g</li>
+                                            <li><strong>Sodium:</strong> {per100g(sodium)} mg</li>
+                                        </ul>
+                                    </div>
+                                </>
+                            )}
+                             <Separator />
+                            <div>
+                                <h4 className="font-semibold">Ingredients</h4>
+                                <p className="text-sm text-muted-foreground break-words">{scan.input?.ingredients || 'N/A'}</p>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
