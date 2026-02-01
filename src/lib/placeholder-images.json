@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-1",
+      "description": "A vibrant assortment of fresh vegetables and fruits on a wooden table.",
+      "imageUrl": "https://images.unsplash.com/photo-1712873068968-e0f6c0d097c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxoZWFsdGh5JTIwZm9vZCUyMHZlZ2V0YWJsZXN8ZW58MHx8fHwxNzY5OTIzMzU2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "healthy food vegetables"
+    }
+  ]
 }
