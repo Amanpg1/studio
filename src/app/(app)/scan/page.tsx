@@ -60,7 +60,7 @@ export default function ScanPage() {
     }
     setScanState('submitting');
     try {
-      const newScanId = await analyzeAndSaveScan(data);
+      const newScanId = await analyzeAndSaveScan(user.uid, data);
       toast({ title: 'Analysis Complete!', description: 'Redirecting to results...' });
       router.push(`/scan/${newScanId}`);
     } catch (error) {

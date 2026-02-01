@@ -3,54 +3,20 @@
 import { z } from 'zod';
 import { getPersonalizedFoodRecommendations } from '@/ai/flows/personalized-food-recommendations';
 import { ScanFormSchema } from '@/lib/schemas';
-import { auth } from '@/lib/firebase';
 import { addDoc, collection, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import type { UserProfile, Scan, ScanInput } from '@/lib/types';
-import { headers } from 'next/headers';
-
-async function getCurrentUser(): Promise<UserProfile> {
-  // This is a placeholder for getting the current user on the server.
-  // In a real app with server-side session management, you'd get the user ID from the session.
-  // For this example, we'll rely on the client to provide the user context,
-  // but we still need a user object for the AI flow.
-  // Here we'll fetch the user from Firestore using the uid from the client if available.
-  // Let's assume a simplified auth check for server actions for now.
-  const uid = auth.currentUser?.uid; // This only works if firebase client is initialized on server, which it isn't in this context.
-  
-  // A workaround for this example: In a real app, you must secure this.
-  // We can't use `useAuth` here as it's a server action.
-  // A proper solution involves passing the user ID token and verifying it.
-  // For now, let's proceed with a mock user.
-  if (!uid) {
-      console.warn("No user found on server, using mock data for AI. THIS IS NOT SECURE.");
-      return {
-          uid: 'mock-user',
-          email: 'mock@example.com',
-          name: 'Mock User',
-          healthConditions: ['diabetes'],
-          weightGoals: 'lose weight',
-          createdAt: new Date(),
-      };
-  }
-
-  const userDoc = await getDoc(doc(db, 'users', uid));
-  if (!userDoc.exists()) {
-    throw new Error('User profile not found.');
-  }
-  return userDoc.data() as UserProfile;
-}
 
 export async function analyzeAndSaveScan(
+  uid: string,
   values: z.infer<typeof ScanFormSchema>
 ): Promise<string> {
-  const validatedValues = ScanFormSchema.parse(values);
-  
-  const uid = auth.currentUser?.uid;
   if (!uid) {
-      throw new Error("User not authenticated.");
+    throw new Error('User not authenticated.');
   }
+  const validatedValues = ScanFormSchema.parse(values);
+
   const userDoc = await getDoc(doc(db, 'users', uid));
   if (!userDoc.exists()) {
     throw new Error('User profile not found.');
@@ -89,7 +55,7 @@ export async function analyzeAndSaveScan(
     const aiResult = await getPersonalizedFoodRecommendations(aiInput);
 
     const scanData: Omit<Scan, 'id'> = {
-      userId: userProfile.uid,
+      userId: uid,
       productName: validatedValues.productName,
       input: scanInput,
       result: {
@@ -112,11 +78,10 @@ export async function analyzeAndSaveScan(
   }
 }
 
-export async function deleteScan(scanId: string) {
+export async function deleteScan(scanId: string, uid: string) {
     if (!scanId) {
         throw new Error('Scan ID is required.');
     }
-    const uid = auth.currentUser?.uid;
     if (!uid) {
         throw new Error("User not authenticated.");
     }

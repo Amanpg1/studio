@@ -1,45 +1,17 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import type { Scan } from '@/lib/types';
+import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { deleteScan } from '@/app/actions/scan';
-import { Trash2 } from 'lucide-react';
-import { headers } from 'next/headers';
-
-// This is a server component that fetches data.
-// In a real app with proper session management, we would get the UID from the server session.
-// For this example, we'll assume we can get the current user, but this part is tricky without a full backend.
-// A client component fetching data after mount is an alternative.
-// We'll proceed with a server-side fetch assuming we can get the user.
-
-async function getScans(userId: string): Promise<Scan[]> {
-    const q = query(
-      collection(db, "scans"),
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc")
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: (doc.data().createdAt as Timestamp).toDate(),
-    })) as Scan[];
-}
-
-function DeleteButton({ scanId }: { scanId: string }) {
-    const deleteScanWithId = deleteScan.bind(null, scanId);
-    return (
-        <form action={deleteScanWithId}>
-            <Button variant="ghost" size="icon" type="submit">
-                <Trash2 className="h-4 w-4 text-destructive" />
-                <span className="sr-only">Delete scan</span>
-            </Button>
-        </form>
-    );
-}
+import { Trash2, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const getAssessmentVariant = (assessment: Scan['result']['assessment']) => {
     switch (assessment) {
@@ -50,20 +22,80 @@ const getAssessmentVariant = (assessment: Scan['result']['assessment']) => {
     }
 }
 
-export default async function HistoryPage() {
-    // This is not a secure way to get the user ID on the server.
-    // In a production app, use server-side sessions.
-    const uid = auth.currentUser?.uid;
-    const scans = uid ? await getScans(uid) : [];
+export default function HistoryPage() {
+    const { user, loading: authLoading } = useAuth();
+    const { toast } = useToast();
+    const [scans, setScans] = useState<Scan[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    if (!uid) {
+    useEffect(() => {
+        if (user) {
+            const fetchScans = async () => {
+                setLoading(true);
+                const q = query(
+                    collection(db, "scans"),
+                    where("userId", "==", user.uid),
+                    orderBy("createdAt", "desc")
+                );
+                const querySnapshot = await getDocs(q);
+                const fetchedScans = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    createdAt: (doc.data().createdAt as Timestamp).toDate(),
+                })) as Scan[];
+                setScans(fetchedScans);
+                setLoading(false);
+            };
+            fetchScans();
+        } else if (!authLoading) {
+            setLoading(false);
+        }
+    }, [user, authLoading]);
+
+    const handleDelete = async (scanId: string) => {
+        if (!user) return;
+        
+        const originalScans = [...scans];
+        // Optimistically update the UI
+        setScans(scans.filter(s => s.id !== scanId));
+
+        try {
+            await deleteScan(scanId, user.uid);
+            toast({
+                title: "Scan deleted",
+                description: "The scan has been removed from your history.",
+            });
+        } catch (error) {
+            // Revert on error
+            setScans(originalScans);
+            toast({
+                variant: 'destructive',
+                title: "Deletion failed",
+                description: "Could not delete the scan. Please try again.",
+            });
+        }
+    };
+
+    if (loading || authLoading) {
+        return (
+            <div className="flex justify-center items-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2">Loading history...</span>
+            </div>
+        )
+    }
+
+    if (!user && !authLoading) {
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle>Authentication Error</CardTitle>
+                    <CardTitle>Please Log In</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p>Could not verify user. Please try logging in again.</p>
+                    <p>You need to be logged in to view your scan history.</p>
+                     <Button asChild variant="link" className="p-0">
+                        <Link href="/login">Login</Link>
+                    </Button>
                 </CardContent>
             </Card>
         )
@@ -79,7 +111,7 @@ export default async function HistoryPage() {
             </div>
             <Card>
                 <CardContent className="p-0">
-                    {scans.length === 0 ? (
+                    {!loading && scans.length === 0 ? (
                         <div className="p-6 text-center text-muted-foreground">
                             <p>You haven't scanned any items yet.</p>
                             <Button asChild variant="link">
@@ -90,9 +122,9 @@ export default async function HistoryPage() {
                         <ul className="divide-y">
                             {scans.map(scan => (
                                 <li key={scan.id} className="flex items-center justify-between p-4 hover:bg-secondary/50">
-                                    <Link href={`/scan/${scan.id}`} className="flex-1">
+                                    <Link href={`/scan/${scan.id}`} className="flex-1 group">
                                         <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-4">
-                                            <h3 className="font-semibold">{scan.productName}</h3>
+                                            <h3 className="font-semibold group-hover:underline">{scan.productName}</h3>
                                             <Badge variant={getAssessmentVariant(scan.result.assessment)}>
                                                 {scan.result.assessment}
                                             </Badge>
@@ -102,7 +134,10 @@ export default async function HistoryPage() {
                                         </p>
                                     </Link>
                                     <div className="ml-4">
-                                       <DeleteButton scanId={scan.id} />
+                                       <Button variant="ghost" size="icon" onClick={() => handleDelete(scan.id)}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                            <span className="sr-only">Delete scan</span>
+                                        </Button>
                                     </div>
                                 </li>
                             ))}
