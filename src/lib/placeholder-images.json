@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-1",
-      "description": "A vibrant assortment of fresh vegetables and fruits on a wooden table.",
-      "imageUrl": "https://images.unsplash.com/photo-1712873068968-e0f6c0d097c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxoZWFsdGh5JTIwZm9vZCUyMHZlZ2V0YWJsZXN8ZW58MHx8fHwxNzY5OTIzMzU2fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "healthy food vegetables"
+      "description": "A person scanning a food product with their smartphone, with nutritional information graphics overlaid.",
+      "imageUrl": "https://images.unsplash.com/photo-1723060611549-7780738f2cb4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwaG9uZSUyMHNjYW5uaW5nJTIwZm9vZHxlbnwwfHx8fDE3Njk5MjU3ODB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "phone scanning food"
     }
   ]
 }

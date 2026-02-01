@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 export const metadata: Metadata = {
   title: 'NutriScan AI',
   description:
-    'Scan food labels, get AI-powered safety assessments, and receive personalized recommendations based on your health profile.',
+    'Scan food labels with NutriScan AI, get AI-powered safety assessments, and receive personalized recommendations based on your health profile.',
 };
 
 export default function RootLayout({
