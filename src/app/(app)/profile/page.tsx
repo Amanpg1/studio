@@ -46,7 +46,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (searchParams.get('new') === 'true') {
         toast({
-            title: 'Welcome to FoodWise AI!',
+            title: 'Welcome to NutriScan AI!',
             description: 'Please complete your profile to get personalized recommendations.',
         });
     }

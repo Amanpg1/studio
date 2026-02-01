@@ -58,7 +58,7 @@ export default function LandingPage() {
                 Eat Smarter. Live Healthier.
               </h1>
               <p className="max-w-[700px] text-lg text-muted-foreground sm:text-xl">
-                FoodWise AI helps you understand what's in your food. Scan labels, get AI-powered safety assessments, and make choices that fit your health goals.
+                NutriScan AI helps you understand what's in your food. Scan labels, get AI-powered safety assessments, and make choices that fit your health goals.
               </p>
               <div className="flex gap-4">
                 <Button asChild size="lg">
@@ -113,7 +113,7 @@ export default function LandingPage() {
       <footer className="py-6 md:px-8 md:py-0">
         <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
           <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            Built by FoodWise AI. Your guide to healthier eating.
+            Built by NutriScan AI. Your guide to healthier eating.
           </p>
         </div>
       </footer>

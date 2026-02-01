@@ -96,7 +96,7 @@ export default function SignUpPage() {
           </div>
           <CardTitle className="text-2xl">Create an Account</CardTitle>
           <CardDescription>
-            Join FoodWise AI to start making smarter food choices today.
+            Join NutriScan AI to start making smarter food choices today.
           </CardDescription>
         </CardHeader>
         <CardContent>

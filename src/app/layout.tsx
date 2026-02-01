@@ -4,7 +4,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'FoodWise AI',
+  title: 'NutriScan AI',
   description:
     'Scan food labels, get AI-powered safety assessments, and receive personalized recommendations based on your health profile.',
 };

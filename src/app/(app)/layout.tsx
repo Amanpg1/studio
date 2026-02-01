@@ -93,7 +93,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1">
           <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur sm:px-6">
             <h1 className="text-xl font-semibold">
-              {navItems.find((item) => item.href === pathname)?.label || 'FoodWise AI'}
+              {navItems.find((item) => item.href === pathname)?.label || 'NutriScan AI'}
             </h1>
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon">

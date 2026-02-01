@@ -6,7 +6,7 @@ export function FullScreenLoader() {
     <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-background">
       <Logo />
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <p className="text-muted-foreground">Loading FoodWise AI...</p>
+      <p className="text-muted-foreground">Loading NutriScan AI...</p>
     </div>
   );
 }
