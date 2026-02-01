@@ -2,7 +2,6 @@
 
 import { doc } from 'firebase/firestore';
 import type { Scan } from '@/lib/types';
-import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, CheckCircle2, Info, ShieldAlert, Zap, AlertTriangle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
@@ -71,7 +70,26 @@ export default function ScanResultPage({ params }: { params: { id: string } }) {
     }
 
     if (!scan) {
-        notFound();
+         return (
+             <div className="space-y-6">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Analysis Result</h2>
+                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="h-5 w-5" />
+                            Scan Not Found
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">
+                            We couldn't find the result for this scan. It might still be processing, or it may have been deleted. Please try refreshing the page in a moment.
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+        );
     }
 
     if (!scan.result) {

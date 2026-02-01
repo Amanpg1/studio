@@ -61,7 +61,6 @@ export default function ScanPage() {
     };
 
     if (scanState === 'camera') {
-      setHasCameraPermission(null); // Reset permission state on re-entering camera view
       startCamera();
     } else {
       stopCamera();
