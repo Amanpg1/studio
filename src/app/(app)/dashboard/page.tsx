@@ -1,11 +1,14 @@
+'use client';
+
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { History, PlusCircle, ScanLine } from 'lucide-react';
 import Link from 'next/link';
-
-// This is a server component, but we will fetch data on the client side for now
-// to ensure we have the logged in user's ID.
-// A more advanced implementation might use server-side data fetching with session management.
+import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import type { Scan } from '@/lib/types';
+import { InlineLoader } from '@/components/loader';
 
 function StatCard({ title, value, icon: Icon, description }: { title: string, value: string, icon: React.ElementType, description: string }) {
     return (
@@ -23,12 +26,32 @@ function StatCard({ title, value, icon: Icon, description }: { title: string, va
 }
 
 export default function DashboardPage() {
-  // In a real app, you would fetch these values from your database
-  const stats = {
-    totalScans: '12',
-    safeItems: '8',
-    unsafeItems: '2'
-  };
+  const { user: firebaseUser } = useUser();
+  const firestore = useFirestore();
+
+  const scansQuery = useMemoFirebase(() => {
+    if (!firebaseUser || !firestore) return null;
+    return query(
+      collection(firestore, "scans"), 
+      where("userId", "==", firebaseUser.uid),
+      orderBy("createdAt", "desc")
+    );
+  }, [firebaseUser, firestore]);
+  
+  const { data: scans, isLoading } = useCollection<Scan>(scansQuery);
+
+  const stats = useMemo(() => {
+    if (!scans) {
+      return { totalScans: 0, safeItems: 0, unsafeItems: 0 };
+    }
+    return {
+      totalScans: scans.length,
+      safeItems: scans.filter(s => s.result.assessment === 'Safe to Eat').length,
+      unsafeItems: scans.filter(s => s.result.assessment === 'Consume in Moderation' || s.result.assessment === 'Not Safe').length,
+    };
+  }, [scans]);
+
+  const recentScans = scans?.slice(0, 5) ?? [];
 
   return (
     <div className="space-y-6">
@@ -53,11 +76,19 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <StatCard title="Total Scans" value={stats.totalScans} icon={ScanLine} description="All items you've scanned." />
-        <StatCard title="Safe Items" value={stats.safeItems} icon={ScanLine} description="Items marked as safe to eat." />
-        <StatCard title="Moderation / Not Safe" value={stats.unsafeItems} icon={ScanLine} description="Items to be careful with." />
-      </div>
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Card><CardHeader><CardTitle><InlineLoader text="Loading stats..."/></CardTitle></CardHeader></Card>
+          <Card><CardHeader><CardTitle><InlineLoader text="Loading stats..."/></CardTitle></CardHeader></Card>
+          <Card><CardHeader><CardTitle><InlineLoader text="Loading stats..."/></CardTitle></CardHeader></Card>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <StatCard title="Total Scans" value={String(stats.totalScans)} icon={ScanLine} description="All items you've scanned." />
+          <StatCard title="Safe Items" value={String(stats.safeItems)} icon={ScanLine} description="Items marked as safe to eat." />
+          <StatCard title="Moderation / Not Safe" value={String(stats.unsafeItems)} icon={ScanLine} description="Items to be careful with." />
+        </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -65,10 +96,29 @@ export default function DashboardPage() {
           <CardDescription>Your last few scanned items.</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            No recent scans found. Start by scanning a new food item!
-          </p>
-          {/* In a real app, a list of recent scans would be rendered here */}
+          {isLoading ? (
+            <InlineLoader text="Loading recent scans..." />
+          ) : recentScans.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No recent scans found. Start by scanning a new food item!
+            </p>
+          ) : (
+            <ul className="divide-y">
+              {recentScans.map(scan => (
+                <li key={scan.id} className="py-2">
+                  <Link href={`/scan/${scan.id}`} className="flex items-center justify-between group">
+                    <div>
+                      <p className="font-semibold group-hover:underline">{scan.productName}</p>
+                      <p className="text-sm text-muted-foreground">{scan.result.assessment}</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(scan.createdAt.seconds * 1000).toLocaleDateString()}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>

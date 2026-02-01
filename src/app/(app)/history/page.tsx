@@ -1,17 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useState } from 'react';
+import { collection, query, where, orderBy, doc, deleteDoc } from 'firebase/firestore';
 import type { Scan } from '@/lib/types';
-import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { deleteScan } from '@/app/actions/scan';
 import { Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 
 const getAssessmentVariant = (assessment: Scan['result']['assessment']) => {
     switch (assessment) {
@@ -23,60 +21,46 @@ const getAssessmentVariant = (assessment: Scan['result']['assessment']) => {
 }
 
 export default function HistoryPage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user: firebaseUser, isUserLoading: authLoading } = useUser();
+    const firestore = useFirestore();
     const { toast } = useToast();
-    const [scans, setScans] = useState<Scan[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (user) {
-            const fetchScans = async () => {
-                setLoading(true);
-                const q = query(
-                    collection(db, "scans"),
-                    where("userId", "==", user.uid),
-                    orderBy("createdAt", "desc")
-                );
-                const querySnapshot = await getDocs(q);
-                const fetchedScans = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    createdAt: (doc.data().createdAt as Timestamp).toDate(),
-                })) as Scan[];
-                setScans(fetchedScans);
-                setLoading(false);
-            };
-            fetchScans();
-        } else if (!authLoading) {
-            setLoading(false);
-        }
-    }, [user, authLoading]);
+    const scansQuery = useMemoFirebase(() => {
+        if (!firebaseUser || !firestore) return null;
+        return query(
+            collection(firestore, "scans"),
+            where("userId", "==", firebaseUser.uid),
+            orderBy("createdAt", "desc")
+        );
+    }, [firebaseUser, firestore]);
+
+    const { data: scans, isLoading: scansLoading } = useCollection<Scan>(scansQuery);
 
     const handleDelete = async (scanId: string) => {
-        if (!user) return;
-        
-        const originalScans = [...scans];
-        // Optimistically update the UI
-        setScans(scans.filter(s => s.id !== scanId));
-
+        if (!firebaseUser || !firestore) return;
+        setIsDeleting(scanId);
         try {
-            await deleteScan(scanId, user.uid);
+            const scanDocRef = doc(firestore, 'scans', scanId);
+            await deleteDoc(scanDocRef);
             toast({
                 title: "Scan deleted",
                 description: "The scan has been removed from your history.",
             });
         } catch (error) {
-            // Revert on error
-            setScans(originalScans);
             toast({
                 variant: 'destructive',
                 title: "Deletion failed",
                 description: "Could not delete the scan. Please try again.",
             });
+        } finally {
+            setIsDeleting(null);
         }
     };
 
-    if (loading || authLoading) {
+    const loading = authLoading || scansLoading;
+
+    if (loading) {
         return (
             <div className="flex justify-center items-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -85,7 +69,7 @@ export default function HistoryPage() {
         )
     }
 
-    if (!user && !authLoading) {
+    if (!firebaseUser && !authLoading) {
         return (
             <Card>
                 <CardHeader>
@@ -111,7 +95,7 @@ export default function HistoryPage() {
             </div>
             <Card>
                 <CardContent className="p-0">
-                    {!loading && scans.length === 0 ? (
+                    {!loading && scans?.length === 0 ? (
                         <div className="p-6 text-center text-muted-foreground">
                             <p>You haven't scanned any items yet.</p>
                             <Button asChild variant="link">
@@ -120,7 +104,7 @@ export default function HistoryPage() {
                         </div>
                     ) : (
                         <ul className="divide-y">
-                            {scans.map(scan => (
+                            {scans?.map(scan => (
                                 <li key={scan.id} className="flex items-center justify-between p-4 hover:bg-secondary/50">
                                     <Link href={`/scan/${scan.id}`} className="flex-1 group">
                                         <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-4">
@@ -130,12 +114,12 @@ export default function HistoryPage() {
                                             </Badge>
                                         </div>
                                         <p className="text-sm text-muted-foreground">
-                                            Scanned on {new Date(scan.createdAt).toLocaleDateString()}
+                                            Scanned on {new Date(scan.createdAt.seconds * 1000).toLocaleDateString()}
                                         </p>
                                     </Link>
                                     <div className="ml-4">
-                                       <Button variant="ghost" size="icon" onClick={() => handleDelete(scan.id)}>
-                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                       <Button variant="ghost" size="icon" onClick={() => handleDelete(scan.id)} disabled={!!isDeleting}>
+                                            {isDeleting === scan.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
                                             <span className="sr-only">Delete scan</span>
                                         </Button>
                                     </div>

@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser, useFirestore } from '@/firebase';
 import { ScanFormSchema, type ScanFormValues } from '@/lib/schemas';
-import { analyzeAndSaveScan } from '@/app/actions/scan';
+import { getPersonalizedFoodRecommendations } from '@/ai/flows/personalized-food-recommendations';
+import { addDoc, collection, doc, getDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +15,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Loader2, Upload } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
+import type { UserProfile, Scan, ScanInput } from '@/lib/types';
+
 
 // Dummy data to simulate OCR result
 const DUMMY_OCR_DATA: ScanFormValues = {
@@ -28,7 +31,8 @@ const DUMMY_OCR_DATA: ScanFormValues = {
 
 export default function ScanPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user: firebaseUser } = useUser();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [scanState, setScanState] = useState<'idle' | 'scanning' | 'form' | 'submitting'>('idle');
 
@@ -54,16 +58,68 @@ export default function ScanPage() {
   };
   
   const onSubmit = async (data: ScanFormValues) => {
-    if (!user) {
+    if (!firebaseUser || !firestore) {
         toast({ variant: 'destructive', title: 'You must be logged in.' });
         return;
     }
     setScanState('submitting');
     try {
-      const newScanId = await analyzeAndSaveScan(user.uid, data);
+      const validatedValues = ScanFormSchema.parse(data);
+
+      const userDoc = await getDoc(doc(firestore, 'users', firebaseUser.uid));
+      if (!userDoc.exists()) {
+        throw new Error('User profile not found.');
+      }
+      const userProfile = userDoc.data() as UserProfile;
+
+      const scanInput: ScanInput = {
+        productName: validatedValues.productName,
+        ingredients: validatedValues.ingredients,
+        nutrition: {
+          calories: validatedValues.calories,
+          fat: validatedValues.fat,
+          sugar: validatedValues.sugar,
+          sodium: validatedValues.sodium,
+        },
+      };
+
+      const aiInput = {
+        userProfile: {
+          healthConditions: userProfile.healthConditions,
+          weightGoals: userProfile.weightGoals,
+        },
+        foodScanData: {
+          foodLabelData: `Product: ${validatedValues.productName}. Ingredients: ${validatedValues.ingredients}`,
+          nutritionInformation: {
+            calories: validatedValues.calories,
+            fat: validatedValues.fat,
+            sugar: validatedValues.sugar,
+            sodium: validatedValues.sodium,
+            ingredients: validatedValues.ingredients.split(',').map(s => s.trim()),
+          },
+        },
+      };
+
+      const aiResult = await getPersonalizedFoodRecommendations(aiInput);
+
+      const scanData: Omit<Scan, 'id'> = {
+        userId: firebaseUser.uid,
+        productName: validatedValues.productName,
+        input: scanInput,
+        result: {
+          assessment: aiResult.assessment,
+          explanation: aiResult.explanation,
+        },
+        createdAt: new Date(),
+      };
+
+      const docRef = await addDoc(collection(firestore, 'scans'), scanData);
+      
+      const newScanId = docRef.id;
       toast({ title: 'Analysis Complete!', description: 'Redirecting to results...' });
       router.push(`/scan/${newScanId}`);
     } catch (error) {
+      console.error(error);
       toast({
         variant: 'destructive',
         title: 'Analysis Failed',
@@ -152,9 +208,9 @@ export default function ScanPage() {
                       name={nutrient}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="capitalize">{nutrient} (g)</FormLabel>
+                          <FormLabel className="capitalize">{nutrient} {nutrient === 'calories' ? '(kcal)' : '(g)'}</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.1" {...field} />
+                            <Input type="number" step="0.1" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

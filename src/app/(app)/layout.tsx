@@ -2,7 +2,10 @@
 
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser, useAuth, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { doc } from 'firebase/firestore';
+import { signOut as firebaseSignOut } from 'firebase/auth';
 import { FullScreenLoader } from '@/components/loader';
 import {
   SidebarProvider,
@@ -25,6 +28,7 @@ import {
   ScanLine,
   User,
 } from 'lucide-react';
+import type { UserProfile } from '@/lib/types';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -34,22 +38,33 @@ const navItems = [
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, signOut } = useAuth();
+  const { user: firebaseUser, isUserLoading: authLoading } = useUser();
+  const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
   const pathname = usePathname();
 
+  const userDocRef = useMemoFirebase(() => {
+    if (!firebaseUser?.uid || !firestore) return null;
+    return doc(firestore, 'users', firebaseUser.uid);
+  }, [firebaseUser, firestore]);
+
+  const { data: userProfile, isLoading: profileLoading } = useDoc<UserProfile>(userDocRef);
+
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !firebaseUser) {
       router.replace(`/login?redirectedFrom=${pathname}`);
     }
-  }, [user, loading, router, pathname]);
+  }, [firebaseUser, authLoading, router, pathname]);
 
-  if (loading || !user) {
+  const isLoading = authLoading || (!!firebaseUser && profileLoading);
+
+  if (isLoading || !userProfile) {
     return <FullScreenLoader />;
   }
 
   const handleSignOut = async () => {
-    await signOut();
+    await firebaseSignOut(auth);
     router.push('/');
   };
 
@@ -100,7 +115,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <Bell className="h-5 w-5" />
                 <span className="sr-only">Notifications</span>
               </Button>
-              <UserNav user={user} onSignOut={handleSignOut} />
+              <UserNav user={userProfile} onSignOut={handleSignOut} />
             </div>
           </header>
           <div className="p-4 sm:p-6">{children}</div>

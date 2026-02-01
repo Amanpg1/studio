@@ -6,36 +6,28 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
+import type { User as FirebaseUser } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, useFirestore } from '@/firebase';
 import { LoginSchema } from '@/lib/schemas';
 import { GoogleIcon } from '@/components/google-icon';
 import { Logo } from '@/components/logo';
+import type { UserProfile } from '@/lib/types';
 
 type FormData = z.infer<typeof LoginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithEmail, signInWithGoogle } = useAuth();
+  const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -51,7 +43,7 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
-      await signInWithEmail(data);
+      await signInWithEmailAndPassword(auth, data.email, data.password);
       const redirectedFrom = searchParams.get('redirectedFrom') || '/dashboard';
       router.push(redirectedFrom);
     } catch (error: any) {
@@ -71,10 +63,27 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
-      await signInWithGoogle();
+      const userCredential = await signInWithPopup(auth, new GoogleAuthProvider());
+      const userRef = doc(firestore, 'users', userCredential.user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        const user = userCredential.user;
+        const userProfile: UserProfile = {
+            uid: user.uid,
+            email: user.email!,
+            name: user.displayName || 'New User',
+            healthConditions: [],
+            weightGoals: 'maintain weight',
+            createdAt: new Date(),
+        };
+        await setDoc(userRef, userProfile);
+      }
+      
       const redirectedFrom = searchParams.get('redirectedFrom') || '/dashboard';
       router.push(redirectedFrom);
     } catch (error) {
+      console.error(error);
       toast({
         variant: 'destructive',
         title: 'Google Sign-In Failed',

@@ -1,26 +1,14 @@
-import { doc, getDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+'use client';
+
+import { doc, Timestamp } from 'firebase/firestore';
 import type { Scan } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle2, Info, ShieldAlert, Zap } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-
-async function getScan(id: string): Promise<Scan | null> {
-    const docRef = doc(db, 'scans', id);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        return {
-            id: docSnap.id,
-            ...data,
-            createdAt: (data.createdAt as Timestamp).toDate(),
-        } as Scan;
-    }
-    return null;
-}
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { FullScreenLoader } from '@/components/loader';
 
 const assessmentDetails = {
     'Safe to Eat': {
@@ -46,8 +34,18 @@ const assessmentDetails = {
     },
 };
 
-export default async function ScanResultPage({ params }: { params: { id: string } }) {
-    const scan = await getScan(params.id);
+export default function ScanResultPage({ params }: { params: { id: string } }) {
+    const firestore = useFirestore();
+    const scanDocRef = useMemoFirebase(() => {
+        if (!params.id || !firestore) return null;
+        return doc(firestore, 'scans', params.id);
+    }, [params.id, firestore]);
+
+    const { data: scan, isLoading } = useDoc<Scan>(scanDocRef);
+
+    if (isLoading) {
+        return <FullScreenLoader />;
+    }
 
     if (!scan) {
         notFound();

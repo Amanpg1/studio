@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
+import type { User as FirebaseUser } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+
 
 import { Button } from '@/components/ui/button';
 import {
@@ -25,16 +29,33 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, useFirestore } from '@/firebase';
 import { SignUpSchema } from '@/lib/schemas';
 import { GoogleIcon } from '@/components/google-icon';
 import { Logo } from '@/components/logo';
+import type { UserProfile } from '@/lib/types';
+
 
 type FormData = z.infer<typeof SignUpSchema>;
 
+async function createUserProfile(firestore: any, user: FirebaseUser, name?: string): Promise<UserProfile> {
+    const userRef = doc(firestore, 'users', user.uid);
+    const userProfile: UserProfile = {
+      uid: user.uid,
+      email: user.email!,
+      name: name || user.displayName || 'New User',
+      healthConditions: [],
+      weightGoals: 'maintain weight',
+      createdAt: new Date(),
+    };
+    await setDoc(userRef, userProfile);
+    return userProfile;
+}
+
 export default function SignUpPage() {
   const router = useRouter();
-  const { signUpWithEmail, signInWithGoogle } = useAuth();
+  const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -51,7 +72,12 @@ export default function SignUpPage() {
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
-      await signUpWithEmail(data);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        data.email,
+        data.password
+      );
+      await createUserProfile(firestore, userCredential.user, data.name);
       router.push('/profile?new=true'); // Redirect to complete profile
       toast({
         title: 'Welcome!',
@@ -74,9 +100,17 @@ export default function SignUpPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
-      await signInWithGoogle();
+      const userCredential = await signInWithPopup(auth, new GoogleAuthProvider());
+      const userRef = doc(firestore, 'users', userCredential.user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        await createUserProfile(firestore, userCredential.user);
+      }
+      
       router.push('/profile?new=true'); // Redirect to complete profile
     } catch (error) {
+      console.error(error);
       toast({
         variant: 'destructive',
         title: 'Google Sign-In Failed',

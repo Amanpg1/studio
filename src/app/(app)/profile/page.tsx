@@ -1,10 +1,12 @@
 'use client';
 
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { doc, setDoc } from 'firebase/firestore';
 import { ProfileFormSchema, type ProfileFormValues } from '@/lib/schemas';
-import { ALL_HEALTH_CONDITIONS, ALL_WEIGHT_GOALS, HealthCondition } from '@/lib/types';
+import { ALL_HEALTH_CONDITIONS, ALL_WEIGHT_GOALS } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -13,16 +15,24 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
-import { updateUserProfile } from '@/app/actions/profile';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { FullScreenLoader } from '@/components/loader';
 
 export default function ProfilePage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user: firebaseUser, isUserLoading: authLoading } = useUser();
+  const firestore = useFirestore();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!firebaseUser?.uid || !firestore) return null;
+    return doc(firestore, 'users', firebaseUser.uid);
+  }, [firebaseUser, firestore]);
+
+  const { data: userProfile, isLoading: profileLoading } = useDoc<ProfileFormValues>(userDocRef);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(ProfileFormSchema),
@@ -34,14 +44,14 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    if (user) {
+    if (userProfile) {
       form.reset({
-        name: user.name,
-        healthConditions: user.healthConditions || [],
-        weightGoals: user.weightGoals || 'maintain weight',
+        name: userProfile.name,
+        healthConditions: userProfile.healthConditions || [],
+        weightGoals: userProfile.weightGoals || 'maintain weight',
       });
     }
-  }, [user, form]);
+  }, [userProfile, form]);
   
   useEffect(() => {
     if (searchParams.get('new') === 'true') {
@@ -53,10 +63,12 @@ export default function ProfilePage() {
   }, [searchParams, toast]);
 
   const onSubmit = async (data: ProfileFormValues) => {
-    if (!user) return;
-    setIsLoading(true);
+    if (!firebaseUser || !userDocRef) return;
+    setIsSubmitting(true);
     try {
-      await updateUserProfile(user.uid, data);
+      const validatedData = ProfileFormSchema.parse(data);
+      await setDoc(userDocRef, validatedData, { merge: true });
+
       toast({
         title: 'Profile Updated',
         description: 'Your health profile has been saved successfully.',
@@ -71,12 +83,12 @@ export default function ProfilePage() {
         description: 'Could not update your profile. Please try again.',
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (authLoading) {
-    return <div>Loading profile...</div>;
+  if (authLoading || profileLoading) {
+    return <FullScreenLoader />;
   }
 
   return (
@@ -190,8 +202,8 @@ export default function ProfilePage() {
                 )}
               />
 
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {searchParams.get('new') === 'true' ? 'Save & Continue' : 'Save Changes'}
               </Button>
             </form>
