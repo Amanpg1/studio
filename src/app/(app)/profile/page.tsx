@@ -6,7 +6,7 @@ import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, setDoc } from 'firebase/firestore';
 import { ProfileFormSchema, type ProfileFormValues } from '@/lib/schemas';
-import { ALL_HEALTH_CONDITIONS, ALL_WEIGHT_GOALS } from '@/lib/types';
+import { ALL_HEALTH_CONDITIONS, ALL_WEIGHT_GOALS, ALL_GENDERS } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -19,6 +19,7 @@ import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FullScreenLoader } from '@/components/loader';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 
 export default function ProfilePage() {
   const { user: firebaseUser, isUserLoading: authLoading } = useUser();
@@ -42,6 +43,8 @@ export default function ProfilePage() {
       healthConditions: [],
       detailedHealthConditions: '',
       weightGoals: 'maintain weight',
+      gender: 'prefer not to say',
+      currentWeight: '',
     },
   });
 
@@ -52,6 +55,8 @@ export default function ProfilePage() {
         healthConditions: userProfile.healthConditions || [],
         detailedHealthConditions: userProfile.detailedHealthConditions || '',
         weightGoals: userProfile.weightGoals || 'maintain weight',
+        gender: userProfile.gender || 'prefer not to say',
+        currentWeight: userProfile.currentWeight || '',
       });
     }
   }, [userProfile, form]);
@@ -71,6 +76,7 @@ export default function ProfilePage() {
     
     const dataToSave = {
       ...data,
+      currentWeight: data.currentWeight ? Number(data.currentWeight) : null,
       id: firebaseUser.uid,
       email: firebaseUser.email,
       createdAt: userProfile?.createdAt || new Date(),
@@ -136,6 +142,53 @@ export default function ProfilePage() {
                 )}
               />
 
+              <div className="grid md:grid-cols-2 gap-8">
+                <FormField
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Gender</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-1"
+                        >
+                          {ALL_GENDERS.map((gender) => (
+                              <FormItem key={gender} className="flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                      <RadioGroupItem value={gender} />
+                                  </FormControl>
+                                  <FormLabel className="font-normal capitalize">{gender}</FormLabel>
+                              </FormItem>
+                          ))}
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="currentWeight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Current Weight (kg)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g. 70" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Your weight helps in tailoring nutritional advice.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+               <Separator />
+
               <FormField
                 control={form.control}
                 name="healthConditions"
@@ -147,7 +200,7 @@ export default function ProfilePage() {
                         Select any conditions that apply to you.
                       </FormDescription>
                     </div>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {ALL_HEALTH_CONDITIONS.map((item) => (
                       <FormField
                         key={item}
@@ -206,6 +259,8 @@ export default function ProfilePage() {
                   </FormItem>
                 )}
               />
+              
+               <Separator />
 
               <FormField
                 control={form.control}

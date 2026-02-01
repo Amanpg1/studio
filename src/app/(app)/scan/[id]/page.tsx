@@ -3,7 +3,7 @@
 import { doc } from 'firebase/firestore';
 import type { Scan } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CheckCircle2, Info, ShieldAlert, Zap, AlertTriangle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Info, ShieldAlert, Zap, AlertTriangle, FileText, BarChart2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { FullScreenLoader } from '@/components/loader';
@@ -144,20 +144,14 @@ export default function ScanResultPage({ params }: { params: { id: string } }) {
                         <CardDescription className="text-inherit/80">{details.description}</CardDescription>
                     </div>
                 </CardHeader>
+                <CardContent>
+                     <p className="text-sm font-semibold mt-2">AI-Powered Explanation:</p>
+                     <p className="text-sm text-inherit/90">{scan.result.explanation}</p>
+                </CardContent>
             </Card>
 
-            <div className="grid gap-6 md:grid-cols-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                           <Zap className="h-5 w-5 text-primary" /> AI-Powered Explanation
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">{scan.result.explanation}</p>
-                    </CardContent>
-                </Card>
-                <Card>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <Card className="lg:col-span-1">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Info className="h-5 w-5 text-primary" /> Scanned Information
@@ -173,7 +167,7 @@ export default function ScanResultPage({ params }: { params: { id: string } }) {
                             <h4 className="font-semibold">Ingredients</h4>
                             <p className="text-sm text-muted-foreground">{scan.input?.ingredients || 'N/A'}</p>
                         </div>
-                        <Separator />
+                         <Separator />
                         <div>
                             <h4 className="font-semibold">Key Nutrition Facts</h4>
                              <p className="text-sm text-muted-foreground mt-1">Per Serving ({servingSizeGrams ? `${servingSizeGrams}g` : 'N/A'})</p>
@@ -200,6 +194,28 @@ export default function ScanResultPage({ params }: { params: { id: string } }) {
                         )}
                     </CardContent>
                 </Card>
+                <div className="space-y-6 lg:col-span-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                               <FileText className="h-5 w-5 text-primary" /> AI Product Summary
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">{scan.result.productSummary}</p>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                               <BarChart2 className="h-5 w-5 text-primary" /> AI Nutritional Analysis
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">{scan.result.nutritionalAnalysis}</p>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
     );

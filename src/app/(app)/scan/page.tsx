@@ -96,7 +96,7 @@ export default function ScanPage() {
         return;
     }
     context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-    const imageDataUri = canvas.toDataURL('image/jpeg');
+    const imageDataUri = canvas.toDataURL('image/jpeg', 0.9);
 
     const scansCollectionRef = collection(firestore, 'users', firebaseUser.uid, 'foodScans');
 
@@ -135,6 +135,8 @@ export default function ScanPage() {
           healthConditions: userProfile.healthConditions || [],
           detailedHealthConditions: userProfile.detailedHealthConditions || '',
           weightGoals: userProfile.weightGoals,
+          gender: userProfile.gender,
+          currentWeight: userProfile.currentWeight,
         },
         foodScanData: {
           foodLabelData: foodLabelData, // Pass a comprehensive string
@@ -158,6 +160,8 @@ export default function ScanPage() {
         result: {
           assessment: aiResult.assessment,
           explanation: aiResult.explanation,
+          productSummary: aiResult.productSummary,
+          nutritionalAnalysis: aiResult.nutritionalAnalysis,
         },
         createdAt: new Date(),
       };

@@ -91,6 +91,8 @@ const UserProfileSchema = z.object({
     .optional()
     .describe("A detailed description of the user's personal health problems."),
   weightGoals: z.string().describe('The user selected weight goals'),
+  gender: z.enum(['male', 'female', 'prefer not to say']).optional().describe('The gender of the user.'),
+  currentWeight: z.number().optional().describe('The current weight of the user in kilograms.'),
 });
 
 const NutritionInformationSchema = z.object({
@@ -131,12 +133,14 @@ const FoodSafetyAssessmentSchema = z.enum([
 ]);
 
 const PersonalizedFoodRecommendationsOutputSchema = z.object({
+  productSummary: z.string().describe('A brief, neutral summary of what the food product is.'),
+  nutritionalAnalysis: z.string().describe("A detailed analysis of the product's nutritional content in relation to the user's weight goals, gender, and weight."),
   assessment: FoodSafetyAssessmentSchema.describe(
-    'The overall safety assessment of the food.'
+    'The overall safety assessment of the food, based on health conditions and allergies.'
   ),
   explanation: z
     .string()
-    .describe('The explanation for the safety assessment.'),
+    .describe('The explanation for the safety assessment, focusing on specific ingredients or health risks.'),
 });
 
 export type PersonalizedFoodRecommendationsOutput = z.infer<
@@ -153,48 +157,41 @@ const personalizedFoodRecommendationsPrompt = ai.definePrompt({
   name: 'personalizedFoodRecommendationsPrompt',
   input: {schema: PersonalizedFoodRecommendationsInputSchema},
   output: {schema: PersonalizedFoodRecommendationsOutputSchema},
-  prompt: `You are an AI assistant that provides personalized food recommendations based on a user's health conditions and food scan data.
+  prompt: `You are an AI assistant that provides personalized food recommendations based on a user's health profile and food scan data.
 
-  User Profile:
-  Health Conditions: {{#if userProfile.healthConditions}}{{#each userProfile.healthConditions}}- {{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{else}}None specified{{/if}}
-  Detailed Health Problems: {{userProfile.detailedHealthConditions}}
-  Weight Goals: {{userProfile.weightGoals}}
+  **User Profile:**
+  - Gender: {{userProfile.gender}}
+  - Current Weight: {{userProfile.currentWeight}} kg
+  - Weight Goals: {{userProfile.weightGoals}}
+  - Health Conditions: {{#if userProfile.healthConditions}}{{#each userProfile.healthConditions}}- {{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{else}}None specified{{/if}}
+  - Detailed Health Problems: {{userProfile.detailedHealthConditions}}
 
-  Carefully consider the user's "Detailed Health Problems" when making your assessment. This provides critical context beyond the standard health conditions.
+  **Food Scan Data:**
+  - Raw OCR Text: {{foodScanData.foodLabelData}}
+  - Structured Nutrition Information:
+    - Calories: {{foodScanData.nutritionInformation.calories}}
+    - Fat: {{foodScanData.nutritionInformation.fat}}g
+    - Sugar: {{foodScanData.nutritionInformation.sugar}}g
+    - Sodium: {{foodScanData.nutritionInformation.sodium}}mg
+    - Ingredients: {{foodScanData.nutritionInformation.ingredients}}
 
-  Food Scan Data:
-  Raw OCR Text: {{foodScanData.foodLabelData}}
-  Structured Nutrition Information:
-  - Calories: {{foodScanData.nutritionInformation.calories}}
-  - Fat: {{foodScanData.nutritionInformation.fat}}g
-  - Sugar: {{foodScanData.nutritionInformation.sugar}}g
-  - Sodium: {{foodScanData.nutritionInformation.sodium}}mg
-  - Ingredients: {{foodScanData.nutritionInformation.ingredients}}
+  **Your Task (in 3 parts):**
 
-  Based on all the provided user and food data, assess the food's safety and provide an explanation for the assessment.
-  The assessment must be one of the following: "Safe to Eat", "Consume in Moderation", or "Not Safe".
-  The explanation should outline the specific ingredients or nutritional values that triggered the assessment, paying close attention to the user's detailed health problems.
+  1.  **Product Summary:**
+      - Briefly describe what the food product is in a neutral, objective tone. (e.g., "This is a sweetened, multi-grain breakfast cereal.")
 
-  Example 1:
-  User Profile:
-  Health Conditions: ["diabetes"]
-  Detailed Health Problems: "I am trying to avoid all forms of added sugar and I am sensitive to gluten."
-  Weight Goals: "lose weight"
-  Food Scan Data:
-  Raw OCR Text: "Product: Sugary Cereal. Ingredients: High Fructose Corn Syrup, Enriched Flour, Sugar,..."
-  Structured Nutrition Information: {calories: 200, fat: 5, sugar: 20, sodium: 100, ingredients: "High Fructose Corn Syrup, Enriched Flour, Sugar,..."}
-  Output:
-  {assessment: "Not Safe", explanation: "This food is high in sugar, which is not suitable for people with diabetes. It also contains High Fructose Corn Syrup and Enriched Flour (gluten), which you are trying to avoid based on your detailed health problems."}
+  2.  **Nutritional Analysis:**
+      - Analyze the nutritional information (calories, fat, sugar, sodium) in the context of the user's **weight goals, gender, and current weight**.
+      - Provide insights on whether the food supports their goals. For example, if they want to lose weight, is it high in calories?
 
-  Example 2:
-  User Profile:
-  Health Conditions: ["allergies"]
-  Weight Goals: "maintain weight"
-  Food Scan Data:
-  Raw OCR Text: "Product: Snack bar. Ingredients: Milk, Eggs, Wheat,..."
-  Structured Nutrition Information: {calories: 150, fat: 3, sugar: 10, sodium: 50, ingredients: "Milk, Eggs, Wheat,..."}
-  Output:
-  {assessment: "Not Safe", explanation: "This food contains milk, eggs, and wheat, which are common allergens. It is not safe for people with allergies."}
+  3.  **Safety Assessment & Explanation:**
+      - Based **only** on the user's **Health Conditions** and **Detailed Health Problems**, determine if the food is "Safe to Eat", "Consume in Moderation", or "Not Safe".
+      - Pay close attention to specific ingredients in relation to allergies, diabetes (sugar content), high blood pressure (sodium), etc.
+      - Provide a clear explanation for your assessment, pointing out the specific ingredients or nutritional factors that pose a risk.
+
+  **CRITICAL:** The safety assessment must be based on health risks, not on whether it aligns with weight goals. A high-calorie food might be "Safe to Eat" for someone with no allergies, even if it's not good for weight loss.
+
+  Strictly adhere to the output schema.
   `,
 });
 

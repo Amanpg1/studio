@@ -22,6 +22,10 @@ export const ALL_WEIGHT_GOALS: WeightGoal[] = [
   'gain weight',
 ];
 
+export type Gender = 'male' | 'female' | 'prefer not to say';
+export const ALL_GENDERS: Gender[] = ['male', 'female', 'prefer not to say'];
+
+
 export type UserProfile = {
   id: string;
   email: string;
@@ -29,12 +33,16 @@ export type UserProfile = {
   healthConditions: HealthCondition[];
   detailedHealthConditions?: string;
   weightGoals: WeightGoal;
+  gender?: Gender;
+  currentWeight?: number;
   createdAt: Date | Timestamp;
 };
 
 export type ScanResult = {
   assessment: 'Safe to Eat' | 'Consume in Moderation' | 'Not Safe';
   explanation: string;
+  productSummary: string;
+  nutritionalAnalysis: string;
 };
 
 export type ScanInput = {
