@@ -1,0 +1,225 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile, including their personal information, health conditions, and food preferences.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "healthConditions": {
+          "type": "array",
+          "description": "An array of health condition identifiers that apply to the user. (Relationship: UserProfile 1:N HealthCondition)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "foodPreferences": {
+          "type": "array",
+          "description": "An array of food preference identifiers that apply to the user. (Relationship: UserProfile 1:N FoodPreference)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "weightGoal": {
+          "type": "string",
+          "description": "The user's weight goal (e.g., lose weight, maintain weight, gain weight)."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email"
+      ]
+    },
+    "HealthCondition": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "HealthCondition",
+      "type": "object",
+      "description": "Represents a specific health condition that a user may have (e.g., diabetes, high blood pressure, allergies).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the HealthCondition entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the health condition (e.g., Diabetes)."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the health condition."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "FoodPreference": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FoodPreference",
+      "type": "object",
+      "description": "Represents a food preference or dietary restriction (e.g., vegetarian, vegan, gluten-free).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FoodPreference entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the food preference (e.g., Vegetarian)."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the food preference."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "FoodScan": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FoodScan",
+      "type": "object",
+      "description": "Represents a single food scan event, including the scan timestamp, food details extracted from the label, and the AI assessment result.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FoodScan entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N FoodScan) The user who performed the scan."
+        },
+        "scanTimestamp": {
+          "type": "string",
+          "description": "The timestamp of when the food label was scanned.",
+          "format": "date-time"
+        },
+        "foodName": {
+          "type": "string",
+          "description": "The name of the food product."
+        },
+        "ingredients": {
+          "type": "string",
+          "description": "A comma-separated list of ingredients extracted from the food label using OCR."
+        },
+        "nutritionInformation": {
+          "type": "string",
+          "description": "Nutrition information extracted from the food label using OCR (e.g., calories, fat, protein, carbs)."
+        },
+        "assessmentResult": {
+          "type": "string",
+          "description": "The AI assessment result (e.g., Safe to Eat, Consume in Moderation, Not Safe)."
+        },
+        "explanation": {
+          "type": "string",
+          "description": "The AI assessment explanation for the scan result."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "scanTimestamp",
+        "foodName",
+        "ingredients",
+        "nutritionInformation",
+        "assessmentResult"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile data. The `userId` parameter corresponds to the Firebase Auth UID. This path enforces that only the authenticated user can access their own profile. No denormalized fields are included.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/foodScans/{foodScanId}",
+        "definition": {
+          "entityName": "FoodScan",
+          "schema": {
+            "$ref": "#/backend/entities/FoodScan"
+          },
+          "description": "Stores food scan history for each user. Includes the denormalized `userId` field to enable authorization independence. This path enforces that only the authenticated user can access their own food scan history.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "foodScanId",
+              "description": "The unique identifier for the food scan."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/healthConditions/{healthConditionId}",
+        "definition": {
+          "entityName": "HealthCondition",
+          "schema": {
+            "$ref": "#/backend/entities/HealthCondition"
+          },
+          "description": "Stores information about health conditions. Public read access is enabled, but only admins can create/update/delete.",
+          "params": [
+            {
+              "name": "healthConditionId",
+              "description": "The unique identifier for the health condition."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/foodPreferences/{foodPreferenceId}",
+        "definition": {
+          "entityName": "FoodPreference",
+          "schema": {
+            "$ref": "#/backend/entities/FoodPreference"
+          },
+          "description": "Stores information about food preferences. Public read access is enabled, but only admins can create/update/delete.",
+          "params": [
+            {
+              "name": "foodPreferenceId",
+              "description": "The unique identifier for the food preference."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to prioritize security, scalability, and ease of debugging, adhering to the core design principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). It is designed based on the data provided and the error message provided.\n\n**Authorization Independence (CRITICAL):**\n\n*   The structure avoids hierarchical authorization dependencies (`get()` calls in security rules) by denormalizing authorization-related data. Specifically, `FoodScan` documents include the `userId` of the user who created them, allowing direct ownership checks without needing to `get()` data from the `/users/{userId}` document.\n\n**Structural Segregation (Homogeneous Security Posture):**\n\n*   User profiles and food scan data are stored in separate collections, `/users/{userId}` and `/users/{userId}/foodScans/{foodScanId}`, respectively, reflecting their distinct security requirements. This segregation prevents mixing data with different access needs within the same collection.\n\n**Access Modeling (Standardization and Consistency):**\n\n*   **Private Data:** User profiles (`/users/{userId}`) are path-based, ensuring that only the authenticated user can access their own profile data.\n*   **Hierarchical Paths for User-Owned Data:** Food scans are stored in a subcollection `/users/{userId}/foodScans/{foodScanId}`, establishing a clear ownership relationship between users and their scan history.\n\n**QAPs (Rules are not Filters):**\n\n*   The structure supports secure `list` operations by ensuring that security rules can be applied directly to each collection without needing to filter based on document content. The path-based ownership model for user profiles and food scans allows listing only the resources owned by the authenticated user.\n\n*   The structure allows the retrieval of all `FoodScan` documents by only the associated user. This is achieved by having dedicated userId on the `FoodScan` document.\n\n**Data Clarity and Predictability:**\n\n*   The schema is predictable, with static keys and consistent naming conventions (e.g., `userId` for user identification). This ensures that the rules are predictable.\n\nThis structure ensures that all documents in a collection have the same security requirements and simplifies security rules by moving complexity from logic to structure. It avoids dynamic keys and enforces semantic naming conventions, resulting in a highly maintainable and understandable data model."
+  }
+}
