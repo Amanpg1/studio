@@ -15,7 +15,8 @@ const HealthConditionSchema = z.enum([
   'diabetes',
   'high BP',
   'allergies',
-  'none',
+  'celiac disease',
+  'lactose intolerance',
 ]);
 
 const FoodSafetyInputSchema = z.object({
@@ -28,6 +29,10 @@ const FoodSafetyInputSchema = z.object({
   healthConditions: z
     .array(HealthConditionSchema)
     .describe('User-specified health conditions.'),
+  detailedHealthConditions: z
+    .string()
+    .optional()
+    .describe("A detailed description of the user's personal health problems."),
 });
 export type FoodSafetyInput = z.infer<typeof FoodSafetyInputSchema>;
 
@@ -58,6 +63,7 @@ const foodSafetyAssessmentPrompt = ai.definePrompt({
   Ingredients: {{{ingredients}}}
   Nutrition Facts: {{{nutritionFacts}}}
   Health Conditions: {{#each healthConditions}}- {{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
+  Detailed Health Problems: {{{detailedHealthConditions}}}
 
   Based on this information, determine if the food is:
 
