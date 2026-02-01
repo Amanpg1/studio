@@ -41,7 +41,7 @@ type FormData = z.infer<typeof SignUpSchema>;
 async function createUserProfile(firestore: any, user: FirebaseUser, name?: string): Promise<UserProfile> {
     const userRef = doc(firestore, 'users', user.uid);
     const userProfile: UserProfile = {
-      uid: user.uid,
+      id: user.uid,
       email: user.email!,
       name: name || user.displayName || 'New User',
       healthConditions: [],

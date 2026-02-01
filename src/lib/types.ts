@@ -23,7 +23,7 @@ export const ALL_WEIGHT_GOALS: WeightGoal[] = [
 ];
 
 export type UserProfile = {
-  uid: string;
+  id: string;
   email: string;
   name: string;
   healthConditions: HealthCondition[];

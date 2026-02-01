@@ -70,7 +70,7 @@ export default function LoginPage() {
       if (!userSnap.exists()) {
         const user = userCredential.user;
         const userProfile: UserProfile = {
-            uid: user.uid,
+            id: user.uid,
             email: user.email!,
             name: user.displayName || 'New User',
             healthConditions: [],

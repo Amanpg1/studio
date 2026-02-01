@@ -2,7 +2,7 @@
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, setDoc } from 'firebase/firestore';
 import { ProfileFormSchema, type ProfileFormValues } from '@/lib/schemas';
@@ -62,29 +62,39 @@ export default function ProfilePage() {
     }
   }, [searchParams, toast]);
 
-  const onSubmit = async (data: ProfileFormValues) => {
+  const onSubmit = (data: ProfileFormValues) => {
     if (!firebaseUser || !userDocRef) return;
     setIsSubmitting(true);
-    try {
-      const validatedData = ProfileFormSchema.parse(data);
-      await setDoc(userDocRef, validatedData, { merge: true });
+    
+    const dataToSave = {
+      ...data,
+      id: firebaseUser.uid,
+      email: firebaseUser.email,
+      createdAt: userProfile?.createdAt || new Date(),
+    };
 
-      toast({
-        title: 'Profile Updated',
-        description: 'Your health profile has been saved successfully.',
+    setDoc(userDocRef, dataToSave, { merge: true })
+      .then(() => {
+        toast({
+          title: 'Profile Updated',
+          description: 'Your health profile has been saved successfully.',
+        });
+        if (searchParams.get('new') === 'true') {
+          router.push('/dashboard');
+        }
+      })
+      .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'update',
+          requestResourceData: dataToSave,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        // The global error listener will catch this and display an overlay
+      })
+      .finally(() => {
+        setIsSubmitting(false);
       });
-      if (searchParams.get('new') === 'true') {
-        router.push('/dashboard');
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: 'Could not update your profile. Please try again.',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   if (authLoading || profileLoading) {
