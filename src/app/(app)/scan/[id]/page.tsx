@@ -10,25 +10,22 @@ import { FullScreenLoader } from '@/components/loader';
 
 const assessmentDetails = {
     'Safe to Eat': {
-        variant: 'default',
         icon: CheckCircle2,
         title: 'Safe to Eat',
         description: 'Our analysis indicates this food is safe for you based on your health profile.',
-        className: 'bg-green-100 dark:bg-green-900/50 border-green-400 dark:border-green-600 text-green-800 dark:text-green-200',
+        className: 'bg-safe/10 border-safe/50 text-safe dark:border-safe [&_svg]:text-safe',
     },
     'Consume in Moderation': {
-        variant: 'secondary',
         icon: ShieldAlert,
         title: 'Consume in Moderation',
         description: 'This food may have ingredients or nutritional values that you should be mindful of.',
-        className: 'bg-yellow-100 dark:bg-yellow-900/50 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200',
+        className: 'bg-warning/10 border-warning/50 text-warning dark:border-warning [&_svg]:text-warning',
     },
     'Not Safe': {
-        variant: 'destructive',
         icon: AlertCircle,
         title: 'Not Safe',
         description: 'We advise against eating this food due to potential health risks based on your profile.',
-        className: 'bg-red-100 dark:bg-red-900/50 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200',
+        className: 'bg-destructive/10 border-destructive/50 text-destructive dark:border-destructive [&_svg]:text-destructive',
     },
 };
 

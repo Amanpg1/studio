@@ -17,8 +17,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['Roboto', 'sans-serif'],
-        headline: ['Roboto', 'sans-serif'],
+        body: ['Inter', 'sans-serif'],
+        headline: ['Lexend', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
@@ -52,6 +52,8 @@ export default {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
+        safe: 'hsl(var(--safe))',
+        warning: 'hsl(var(--warning))',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
