@@ -4,8 +4,7 @@ import { doc, Timestamp } from 'firebase/firestore';
 import type { Scan } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle2, Info, ShieldAlert, Zap } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Info, ShieldAlert, Zap, AlertTriangle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { FullScreenLoader } from '@/components/loader';
@@ -52,6 +51,32 @@ export default function ScanResultPage({ params }: { params: { id: string } }) {
         notFound();
     }
 
+    if (!scan.result) {
+        return (
+            <div className="space-y-6">
+                 <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Analysis Result</h2>
+                    <p className="text-muted-foreground">
+                        Detailed assessment for <span className="font-semibold">{scan.productName}</span>.
+                    </p>
+                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                            Assessment Not Available
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">
+                            An AI assessment could not be generated or found for this item. This might be due to a processing error or incomplete data.
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
     const details = assessmentDetails[scan.result.assessment];
 
     return (
@@ -93,21 +118,21 @@ export default function ScanResultPage({ params }: { params: { id: string } }) {
                     <CardContent className="space-y-4">
                         <div>
                             <h4 className="font-semibold">Product Name</h4>
-                            <p className="text-muted-foreground">{scan.input.productName}</p>
+                            <p className="text-muted-foreground">{scan.input?.productName || 'N/A'}</p>
                         </div>
                         <Separator />
                         <div>
                             <h4 className="font-semibold">Ingredients</h4>
-                            <p className="text-sm text-muted-foreground">{scan.input.ingredients}</p>
+                            <p className="text-sm text-muted-foreground">{scan.input?.ingredients || 'N/A'}</p>
                         </div>
                         <Separator />
                         <div>
                             <h4 className="font-semibold">Key Nutrition Facts</h4>
                              <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                                <li><strong>Calories:</strong> {scan.input.nutrition.calories} kcal</li>
-                                <li><strong>Fat:</strong> {scan.input.nutrition.fat} g</li>
-                                <li><strong>Sugar:</strong> {scan.input.nutrition.sugar} g</li>
-                                <li><strong>Sodium:</strong> {scan.input.nutrition.sodium} mg</li>
+                                <li><strong>Calories:</strong> {scan.input?.nutrition?.calories ?? 'N/A'} kcal</li>
+                                <li><strong>Fat:</strong> {scan.input?.nutrition?.fat ?? 'N/A'} g</li>
+                                <li><strong>Sugar:</strong> {scan.input?.nutrition?.sugar ?? 'N/A'} g</li>
+                                <li><strong>Sodium:</strong> {scan.input?.nutrition?.sodium ?? 'N/A'} mg</li>
                             </ul>
                         </div>
                     </CardContent>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { collection, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
 import type { Scan } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +35,8 @@ export default function HistoryPage() {
     }, [firebaseUser, firestore]);
 
     const { data: scans, isLoading: scansLoading } = useCollection<Scan>(scansQuery);
+
+    const validScans = useMemo(() => scans?.filter(s => s && s.result) ?? [], [scans]);
 
     const handleDelete = (scanId: string) => {
         if (!firebaseUser || !firestore) return;
@@ -102,7 +104,7 @@ export default function HistoryPage() {
             </div>
             <Card>
                 <CardContent className="p-0">
-                    {!loading && scans?.length === 0 ? (
+                    {!loading && validScans.length === 0 ? (
                         <div className="p-6 text-center text-muted-foreground">
                             <p>You haven't scanned any items yet.</p>
                             <Button asChild variant="link">
@@ -111,7 +113,7 @@ export default function HistoryPage() {
                         </div>
                     ) : (
                         <ul className="divide-y">
-                            {scans?.map(scan => (
+                            {validScans.map(scan => (
                                 <li key={scan.id} className="flex items-center justify-between p-4 hover:bg-secondary/50">
                                     <Link href={`/scan/${scan.id}`} className="flex-1 group">
                                         <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-4">
@@ -121,7 +123,7 @@ export default function HistoryPage() {
                                             </Badge>
                                         </div>
                                         <p className="text-sm text-muted-foreground">
-                                            Scanned on {new Date((scan.createdAt as any).seconds * 1000).toLocaleDateString()}
+                                            {scan.createdAt && `Scanned on ${new Date((scan.createdAt as any).seconds * 1000).toLocaleDateString()}`}
                                         </p>
                                     </Link>
                                     <div className="ml-4">

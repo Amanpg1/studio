@@ -43,14 +43,15 @@ export default function DashboardPage() {
     if (!scans) {
       return { totalScans: 0, safeItems: 0, unsafeItems: 0 };
     }
+    const validScans = scans.filter(s => s && s.result);
     return {
       totalScans: scans.length,
-      safeItems: scans.filter(s => s.result.assessment === 'Safe to Eat').length,
-      unsafeItems: scans.filter(s => s.result.assessment === 'Consume in Moderation' || s.result.assessment === 'Not Safe').length,
+      safeItems: validScans.filter(s => s.result.assessment === 'Safe to Eat').length,
+      unsafeItems: validScans.filter(s => s.result.assessment === 'Consume in Moderation' || s.result.assessment === 'Not Safe').length,
     };
   }, [scans]);
 
-  const recentScans = scans?.slice(0, 5) ?? [];
+  const recentScans = useMemo(() => scans?.filter(s => s && s.result).slice(0, 5) ?? [], [scans]);
 
   return (
     <div className="space-y-6">
@@ -99,7 +100,10 @@ export default function DashboardPage() {
             <InlineLoader text="Loading recent scans..." />
           ) : recentScans.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No recent scans found. Start by scanning a new food item!
+              {scans && scans.length > 0 
+                ? "No recent scans with a valid assessment found." 
+                : "No recent scans found. Start by scanning a new food item!"
+              }
             </p>
           ) : (
             <ul className="divide-y">
@@ -111,7 +115,7 @@ export default function DashboardPage() {
                       <p className="text-sm text-muted-foreground">{scan.result.assessment}</p>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {new Date((scan.createdAt as any).seconds * 1000).toLocaleDateString()}
+                      {scan.createdAt && new Date((scan.createdAt as any).seconds * 1000).toLocaleDateString()}
                     </p>
                   </Link>
                 </li>
