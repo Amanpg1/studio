@@ -24,14 +24,16 @@ const ExtractFoodInfoInputSchema = z.object({
 export type ExtractFoodInfoInput = z.infer<typeof ExtractFoodInfoInputSchema>;
 
 const ExtractFoodInfoOutputSchema = z.object({
-  productName: z.string().describe('The name of the food product, usually the most prominent text on the packaging.'),
-  ingredients: z.string().describe("The complete list of ingredients, often labeled as 'Ingredients:'."),
+  isFoodItem: z.boolean().describe('Whether the image contains a food item label or not.'),
+  productName: z.string().describe('The name of the food product, usually the most prominent text on the packaging. Empty if not a food item.'),
+  ingredients: z.string().describe("The complete list of ingredients, often labeled as 'Ingredients:'. Empty if not a food item."),
   servingSizeGrams: z.number().optional().describe('The serving size in grams (g), if available.'),
-  calories: z.number().describe('The number of calories per serving, found in the nutrition facts table.'),
-  fat: z.number().describe('The amount of fat in grams (g) per serving, found in the nutrition facts table.'),
-  sugar: z.number().describe('The amount of sugar in grams (g) per serving, found in the nutrition facts table.'),
+  calories: z.number().optional().describe('The number of calories per serving, found in the nutrition facts table.'),
+  fat: z.number().optional().describe('The amount of fat in grams (g) per serving, found in the nutrition facts table.'),
+  sugar: z.number().optional().describe('The amount of sugar in grams (g) per serving, found in the nutrition facts table.'),
   sodium: z
     .number()
+    .optional()
     .describe('The amount of sodium in milligrams (mg) per serving, found in the nutrition facts table.'),
 });
 export type ExtractFoodInfoOutput = z.infer<typeof ExtractFoodInfoOutputSchema>;
@@ -46,7 +48,12 @@ const extractFoodInfoPrompt = ai.definePrompt({
   name: 'extractFoodInfoPrompt',
   input: {schema: ExtractFoodInfoInputSchema},
   output: {schema: ExtractFoodInfoOutputSchema},
-  prompt: `You are an expert at reading food packaging and labels. Your task is to analyze the provided image and extract key information with the highest accuracy possible. The image might contain a nutrition facts panel, an ingredients list, or both.
+  prompt: `You are an expert at reading food packaging and labels. Your first task is to determine if the provided image contains a food product label.
+
+- If the image does not show a food item (e.g., it's a book, a plant, a car), set 'isFoodItem' to false and leave all other fields empty or with default values.
+- If the image DOES show a food item, set 'isFoodItem' to true and proceed to extract the following information with the highest accuracy possible.
+
+The image might contain a nutrition facts panel, an ingredients list, or both.
 
 Extract the following details:
 - productName: The name of the product.
@@ -57,7 +64,7 @@ Extract the following details:
 - sugar: The total sugars in grams (g) per serving.
 - sodium: The sodium in milligrams (mg) per serving.
 
-If a value is not present, use a sensible default like 0 for numerical values or an empty string for text. Carefully examine the entire image to find all the required pieces of information.
+If a value is not present, you can omit it. Carefully examine the entire image to find all the required pieces of information.
 
 Image: {{media url=imageDataUri}}`,
 });
@@ -96,10 +103,10 @@ const UserProfileSchema = z.object({
 });
 
 const NutritionInformationSchema = z.object({
-  calories: z.number().describe('The amount of calories in the food item'),
-  fat: z.number().describe('The amount of fat in the food item'),
-  sugar: z.number().describe('The amount of sugar in the food item'),
-  sodium: z.number().describe('The amount of sodium in the food item'),
+  calories: z.number().optional().describe('The amount of calories in the food item'),
+  fat: z.number().optional().describe('The amount of fat in the food item'),
+  sugar: z.number().optional().describe('The amount of sugar in the food item'),
+  sodium: z.number().optional().describe('The amount of sodium in the food item'),
   ingredients: z
     .string()
     .describe('The full string of ingredients in the food item.'),
@@ -169,10 +176,10 @@ const personalizedFoodRecommendationsPrompt = ai.definePrompt({
   **Food Scan Data:**
   - Raw OCR Text: {{foodScanData.foodLabelData}}
   - Structured Nutrition Information:
-    - Calories: {{foodScanData.nutritionInformation.calories}}
-    - Fat: {{foodScanData.nutritionInformation.fat}}g
-    - Sugar: {{foodScanData.nutritionInformation.sugar}}g
-    - Sodium: {{foodScanData.nutritionInformation.sodium}}mg
+    - Calories: {{#if foodScanData.nutritionInformation.calories}}{{foodScanData.nutritionInformation.calories}} kcal{{else}}N/A{{/if}}
+    - Fat: {{#if foodScanData.nutritionInformation.fat}}{{foodScanData.nutritionInformation.fat}}g{{else}}N/A{{/if}}
+    - Sugar: {{#if foodScanData.nutritionInformation.sugar}}{{foodScanData.nutritionInformation.sugar}}g{{else}}N/A{{/if}}
+    - Sodium: {{#if foodScanData.nutritionInformation.sodium}}{{foodScanData.nutritionInformation.sodium}}mg{{else}}N/A{{/if}}
     - Ingredients: {{foodScanData.nutritionInformation.ingredients}}
 
   **Your Task (in 3 parts):**

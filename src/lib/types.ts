@@ -50,10 +50,10 @@ export type ScanInput = {
   ingredients: string;
   nutrition: {
     servingSizeGrams?: number;
-    calories: number;
-    fat: number;
-    sugar: number;
-    sodium: number;
+    calories?: number;
+    fat?: number;
+    sugar?: number;
+    sodium?: number;
   };
 };
 

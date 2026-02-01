@@ -104,6 +104,10 @@ export default function ScanPage() {
       setAnalysisMessage('Captured! Reading food label with AI...');
       const extractedData = await extractFoodInfoFromImage({ imageDataUri });
 
+      if (!extractedData.isFoodItem) {
+        throw new Error("This doesn't look like a food item. Please scan a food label.");
+      }
+
       if (!extractedData.productName || !extractedData.ingredients) {
         throw new Error('Could not read the product name or ingredients from the label. Please try again with a clearer image.');
       }
@@ -127,7 +131,7 @@ export default function ScanPage() {
         },
       };
 
-      const nutritionString = `Calories: ${extractedData.calories}, Fat: ${extractedData.fat}g, Sugar: ${extractedData.sugar}g, Sodium: ${extractedData.sodium}mg`;
+      const nutritionString = `Calories: ${extractedData.calories ?? 'N/A'}, Fat: ${extractedData.fat ?? 'N/A'}g, Sugar: ${extractedData.sugar ?? 'N/A'}g, Sodium: ${extractedData.sodium ?? 'N/A'}mg`;
       const foodLabelData = `Product Name: ${extractedData.productName}. Ingredients: ${extractedData.ingredients}. Nutrition: ${nutritionString}`;
 
       const aiInput = {
