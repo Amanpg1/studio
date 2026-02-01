@@ -30,6 +30,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  devServer: {
+    allowedDevOrigins: ['*.cloudworkstations.dev'],
+  },
 };
 
 export default nextConfig;
