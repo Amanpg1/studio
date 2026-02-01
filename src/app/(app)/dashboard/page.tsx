@@ -60,7 +60,6 @@ export default function DashboardPage() {
         <div className="space-y-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
                     <p className="text-muted-foreground">Here's a summary of your scanning activity.</p>
                 </div>
             </div>
@@ -79,7 +78,6 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-            <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
             <p className="text-muted-foreground">Here's a summary of your scanning activity.</p>
         </div>
         <div className="flex gap-2">

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useUser, useFirestore } from '@/firebase';
 import { getPersonalizedFoodRecommendations, extractFoodInfoFromImage } from '@/ai/flows/personalized-food-recommendations';
 import { addDoc, collection, doc, getDoc } from 'firebase/firestore';
@@ -21,6 +22,7 @@ export default function ScanPage() {
   const { toast } = useToast();
   const [scanState, setScanState] = useState<'camera' | 'analyzing'>('camera');
   const [analysisMessage, setAnalysisMessage] = useState('');
+  const [imageDataUri, setImageDataUri] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -96,13 +98,14 @@ export default function ScanPage() {
         return;
     }
     context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-    const imageDataUri = canvas.toDataURL('image/jpeg', 0.9);
+    const dataUri = canvas.toDataURL('image/jpeg', 0.9);
+    setImageDataUri(dataUri);
 
     const scansCollectionRef = collection(firestore, 'users', firebaseUser.uid, 'foodScans');
 
     try {
       setAnalysisMessage('Captured! Reading food label with AI...');
-      const extractedData = await extractFoodInfoFromImage({ imageDataUri });
+      const extractedData = await extractFoodInfoFromImage({ imageDataUri: dataUri });
 
       if (!extractedData.isFoodItem) {
         throw new Error("This doesn't look like a food item. Please scan a food label.");
@@ -191,6 +194,7 @@ export default function ScanPage() {
         description: userMessage,
         });
         setScanState('camera');
+        setImageDataUri(null);
     }
   };
 
@@ -244,11 +248,30 @@ export default function ScanPage() {
 
       case 'analyzing':
         return (
-          <Card className="flex flex-col items-center justify-center p-12 space-y-4">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-lg font-medium text-muted-foreground">Analyzing...</p>
-            <p className="text-sm text-muted-foreground">{analysisMessage}</p>
-          </Card>
+          <div className="grid md:grid-cols-2 gap-8 items-start">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Image Captured</CardTitle>
+                    <CardDescription>This is the image being analyzed by our AI.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-4">
+                    {imageDataUri && (
+                        <Image
+                            src={imageDataUri}
+                            alt="Captured food label"
+                            width={canvasRef.current?.width || 1280}
+                            height={canvasRef.current?.height || 720}
+                            className="rounded-md aspect-video object-cover"
+                        />
+                    )}
+                </CardContent>
+            </Card>
+            <Card className="flex flex-col items-center justify-center p-12 space-y-4 sticky top-24">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <p className="text-lg font-medium">Analyzing...</p>
+              <p className="text-sm text-muted-foreground text-center">{analysisMessage}</p>
+            </Card>
+          </div>
         );
       
       default:
