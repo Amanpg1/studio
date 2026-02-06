@@ -14,8 +14,7 @@ import {z} from 'genkit';
 const HealthConditionSchema = z.enum([
   'diabetes',
   'high BP',
-  'allergies',
-  'celiac disease',
+  'allergies','celiac disease',
   'lactose intolerance',
 ]);
 
