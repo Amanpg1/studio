@@ -62,7 +62,7 @@ export default function ScanPage() {
       }
     };
 
-    if (scanState === 'camera') {
+    if (scanState === 'camera' && hasCameraPermission !== false) {
       startCamera();
     } else {
       stopCamera();
@@ -72,7 +72,7 @@ export default function ScanPage() {
       // Cleanup when component unmounts
       stopCamera();
     };
-  }, [scanState]);
+  }, [scanState, hasCameraPermission, toast]);
 
 
   const handleCaptureAndAnalyze = async () => {
